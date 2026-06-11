@@ -1,9 +1,9 @@
 name: Deploy Vite to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
+push:
+branches:
+- main
 
 permissions:
 contents: read
@@ -13,6 +13,8 @@ id-token: write
 jobs:
 build:
 runs-on: ubuntu-latest
+
+```
 steps:
   - uses: actions/checkout@v4
 
@@ -27,13 +29,21 @@ steps:
   - uses: actions/upload-pages-artifact@v3
     with:
       path: dist
-
+```
 
 deploy:
 needs: build
 runs-on: ubuntu-latest
 
+```
+permissions:
+  pages: write
+  id-token: write
+
+environment:
+  name: github-pages
 
 steps:
   - uses: actions/deploy-pages@v4
+```
 
