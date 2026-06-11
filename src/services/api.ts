@@ -77,7 +77,6 @@ class ApiService {
 
   return await response.json();
 }
-  }
 
   // --- Matches ---
   async getMatches(): Promise<MatchData[]> {
