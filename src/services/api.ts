@@ -30,16 +30,15 @@ export type Prediction = {
   createdAt: string;
 };
 
-// Initial Mocks for seamless Preview behavior
 const initialMatches: MatchData[] = [
   { id: "m1", teamA: "Brasil", teamAFlag: "https://flagcdn.com/w160/br.png", teamB: "Argentina", teamBFlag: "https://flagcdn.com/w160/ar.png", date: "15/06/2026", time: "21:30", stadium: "Maracanã", round: "Final", status: "PENDING" },
   { id: "m2", teamA: "Brasil", teamAFlag: "https://flagcdn.com/w160/br.png", teamB: "França", teamBFlag: "https://flagcdn.com/w160/fr.png", date: "18/06/2026", time: "16:00", stadium: "Lusail", round: "Semifinal", status: "PENDING" },
   { id: "m3", teamA: "Inglaterra", teamAFlag: "https://flagcdn.com/w160/gb-eng.png", teamB: "Brasil", teamBFlag: "https://flagcdn.com/w160/br.png", date: "24/06/2026", time: "19:00", stadium: "Wembley", round: "Quartas", status: "PENDING" }
 ];
 
-const INITIAL_SETTINGS = { 
-  pix_value: "30.00", 
-  pix_key: "00020126360014br.gov.bcb.pix0114+5535991717912520400005303986540530.005802BR5921FRANK DE SOUZA BORGES6006LAVRAS62060502Br63042ADA", 
+const INITIAL_SETTINGS = {
+  pix_value: "30.00",
+  pix_key: "00020126360014br.gov.bcb.pix0114+5535991717912520400005303986540530.005802BR5921FRANK DE SOUZA BORGES6006LAVRAS62060502Br63042ADA",
   active_match_id: "m1",
   regulamento: "1. Cada palpite custa o valor definido por aposta.\n2. O palpite só será validado após a confirmação do pagamento via PIX.\n3. A premiação principal corresponderá a 80% do valor total arrecadado, sendo 20% destinados a despesas administrativas do bolão.\n4. O limite máximo de palpites idênticos (com o mesmo placar correto) é de 5 por partida. Após atingir este limite, o placar ficará indisponível.\n5. O prazo máximo para enviar ou mudar o palpite é de até 10 minutos antes do início de cada confronto.\n6. Em caso de empate e múltiplos acertadores do placar vencedor, os 80% do prêmio acumulado serão divididos entre eles em partes iguais.\n7. Caso não haja ganhadores na rodada (nenhum palpite acertar o placar final), o valor total do prêmio (80% da arrecadação) acumulará automaticamente para a próxima rodada.",
   admin_phone: "35991717912",
@@ -53,30 +52,26 @@ class ApiService {
     return !SHEETS_API_URL;
   }
 
-  // Helper for actual Google Sheets
   private async fetchSheets(action: string, payload?: any) {
-  const method = payload ? "POST" : "GET";
+    const method = payload ? "POST" : "GET";
 
-  const response = await fetch(
-    method === "GET"
-      ? `${SHEETS_API_URL}?action=${action}`
-      : SHEETS_API_URL,
-    {
-      method,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: payload
-        ? JSON.stringify({
-            action,
-            ...payload
-          })
-        : undefined
-    }
-  );
+    const response = await fetch(
+      method === "GET"
+        ? `${SHEETS_API_URL}?action=${action}`
+        : SHEETS_API_URL,
+      {
+        method,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: payload
+          ? JSON.stringify({ action, ...payload })
+          : undefined
+      }
+    );
 
-  return await response.json();
-}
+    return await response.json();
+  }
 
   // --- Matches ---
   async getMatches(): Promise<MatchData[]> {
@@ -159,7 +154,7 @@ class ApiService {
     return data.count || 0;
   }
 
-  async submitPrediction(pred: Omit<Prediction, 'id'|'statusPix'|'createdAt'>): Promise<{success: boolean, predictionId: number}> {
+  async submitPrediction(pred: Omit<Prediction, 'id' | 'statusPix' | 'createdAt'>): Promise<{ success: boolean; predictionId: number }> {
     if (this.useMock()) {
       const all = await this.getAllPredictions();
       const newPred: Prediction = {
@@ -175,9 +170,9 @@ class ApiService {
     return await this.fetchSheets('SUBMIT_PREDICTION', { prediction: pred });
   }
 
-  async confirmPayment(id: number): Promise<{waLink?: string}> {
-    let prediction: Prediction|undefined;
-    let match: MatchData|undefined;
+  async confirmPayment(id: number): Promise<{ waLink?: string }> {
+    let prediction: Prediction | undefined;
+    let match: MatchData | undefined;
 
     if (this.useMock()) {
       const all = await this.getAllPredictions();
@@ -186,7 +181,7 @@ class ApiService {
         all[idx].statusPix = 'PAID';
         prediction = all[idx];
         localStorage.setItem('predictions', JSON.stringify(all));
-        
+
         const matches = await this.getMatches();
         match = matches.find(m => m.id === prediction!.matchId);
       }
@@ -207,16 +202,17 @@ class ApiService {
     if (this.useMock()) {
       const all = await this.getAllPredictions();
       const matchPreds = all.filter(p => p.matchId === matchId);
-      const groups: Record<string, {goalsA:number, goalsB:number, count:number}> = {};
+      const groups: Record<string, { goalsA: number; goalsB: number; count: number }> = {};
       matchPreds.forEach(p => {
         const key = `${p.goalsA}-${p.goalsB}`;
-        if(!groups[key]) groups[key] = {goalsA: p.goalsA, goalsB: p.goalsB, count: 0};
+        if (!groups[key]) groups[key] = { goalsA: p.goalsA, goalsB: p.goalsB, count: 0 };
         groups[key].count++;
       });
-      return Object.values(groups).sort((a,b) => b.count - a.count).slice(0,3);
+      return Object.values(groups).sort((a, b) => b.count - a.count).slice(0, 3);
     }
     const data = await this.fetchSheets('GET_STATS', { matchId });
     return data.stats || [];
   }
+}
 
 export const api = new ApiService();
