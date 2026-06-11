@@ -219,6 +219,5 @@ class ApiService {
     const data = await this.fetchSheets('GET_STATS', { matchId });
     return data.stats || [];
   }
-}
 
 export const api = new ApiService();
