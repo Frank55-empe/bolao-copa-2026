@@ -55,13 +55,28 @@ class ApiService {
 
   // Helper for actual Google Sheets
   private async fetchSheets(action: string, payload?: any) {
-    if (!SHEETS_API_URL) throw new Error("Sheets URL not defined");
-    const method = payload ? "POST" : "GET";
-    const res = await fetch(method === "GET" ? `${SHEETS_API_URL}?action=${action}` : SHEETS_API_URL, {
+  const method = payload ? "POST" : "GET";
+
+  const response = await fetch(
+    method === "GET"
+      ? `${SHEETS_API_URL}?action=${action}`
+      : SHEETS_API_URL,
+    {
       method,
-      body: payload ? JSON.stringify({ action, ...payload }) : undefined
-    });
-    return res.json();
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: payload
+        ? JSON.stringify({
+            action,
+            ...payload
+          })
+        : undefined
+    }
+  );
+
+  return await response.json();
+}
   }
 
   // --- Matches ---
