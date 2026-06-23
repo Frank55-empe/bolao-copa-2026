@@ -75,7 +75,7 @@ const INITIAL_SETTINGS = {
 // ---------------------------------------------------------------
 export const SHEETS_API_URL =
   (import.meta.env.VITE_SHEETS_API_URL as string) ||
-  "https://script.google.com/macros/s/AKfycbxlhUBXoMGYc0M7f1OIIZqIFVw-ctLhZqAv_m5JTvr1dBafwcW0xzSScpJoY5DoQkhG/exec";
+  "https://script.google.com/macros/s/AKfycbxKLOUMKvXh4fP86rtK6fvgPGRFSJ5ZfBoYJKdNUPq1VvcTmGBiOtPrOY8gxKmsdZ3C/exec";
 
 class ApiService {
   private useMock(): boolean {
