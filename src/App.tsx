@@ -44,7 +44,9 @@ export default function App() {
       
       {/* Main Content Router */}
       <div className="relative z-10 w-full min-h-screen flex flex-col pt-8 pb-16 md:py-16 px-4 md:px-8">
+        <HashRouter>
        import { HashRouter } from 'react-router-dom';
+          </HashRouter>
           <div className="flex-grow w-full flex flex-col items-center justify-center">
             <Routes>
               <Route path="/" element={<Home onComplete={setUser} />} />
