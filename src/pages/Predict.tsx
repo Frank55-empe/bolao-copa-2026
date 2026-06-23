@@ -7,11 +7,12 @@ const [match, setMatch] = useState<MatchData | null>(
 );
 
 useEffect(() => {
-  if (!match && matchId) {
-    api.getMatches().then(matches => {
-      const found = matches.find(
-        m => String(m.id).trim() === String(matchId).trim()
-      );
+  if (!match) {
+  return (
+    <div className="flex justify-center items-center h-screen">
+      Carregando...
+    </div>
+  );
 
       if (found) {
         setMatch(found);
