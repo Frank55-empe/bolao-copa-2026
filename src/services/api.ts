@@ -189,7 +189,7 @@ const INITIAL_SETTINGS = {
 // ─── URL do Apps Script ───────────────────────────────────────────────────────
 export const SHEETS_API_URL =
   (import.meta.env.VITE_SHEETS_API_URL as string) ||
-  'https://script.google.com/macros/s/AKfycby-X0uThYWrB724HoZ7isQIrOTxDANHcd_hJXZBNDfjjj9w9o41JnU6hzkay1a3RVz3/exec';
+  'https://script.google.com/macros/s/AKfycbxKLOUMKvXh4fP86rtK6fvgPGRFSJ5ZfBoYJKdNUPq1VvcTmGBiOtPrOY8gxKmsdZ3C/exec';
 
 // ─── JSONP helper — contorna CORS do Google Apps Script ──────────────────────
 function jsonp(action: string, payload?: any): Promise<any> {
