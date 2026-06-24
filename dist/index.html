@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bolão Mundial 2026</title>
+    <script>
+      (function() {
+        try {
+          const originalFetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get: function() { return originalFetch; },
+            set: function() { console.warn('Ignored fetch override'); }
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-P_eF4fSE.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Cl50E9rw.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
