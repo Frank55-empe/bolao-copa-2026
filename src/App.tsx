@@ -29,25 +29,36 @@ export type MatchData = {
   status?: 'PENDING' | 'FINISHED';
 };
 
-export default function App() {
-  const [user, setUser] = useState<UserData | null>(null);
+// Lê user do sessionStorage na inicialização
+function readUser(): UserData | null {
+  try {
+    const s = sessionStorage.getItem('bolao_user');
+    return s ? JSON.parse(s) : null;
+  } catch { return null; }
+}
 
-  // Decorative background with neon gradients
+export default function App() {
+  const [user, setUser] = useState<UserData | null>(readUser);
+
+  const handleSetUser = (data: UserData) => {
+    setUser(data);
+    try { sessionStorage.setItem('bolao_user', JSON.stringify(data)); } catch {}
+  };
+
   return (
     <div className="min-h-screen bg-[#020D1F] text-white font-sans selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
-      <div 
+      <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-50"
         style={{ backgroundImage: `url(${mascotsBg})` }}
       />
       <div className="atmosphere pointer-events-none" />
       <div className="stadium-mesh pointer-events-none" />
-      
-      {/* Main Content Router */}
+
       <div className="relative z-10 w-full min-h-screen flex flex-col pt-8 pb-16 md:py-16 px-4 md:px-8">
         <HashRouter>
           <div className="flex-grow w-full flex flex-col items-center justify-center">
             <Routes>
-              <Route path="/" element={<Home onComplete={setUser} />} />
+              <Route path="/" element={<Home onComplete={handleSetUser} />} />
               <Route path="/jogos" element={user ? <Matches user={user} /> : <Navigate to="/" />} />
               <Route path="/palpite/:matchId" element={user ? <Predict user={user} /> : <Navigate to="/" />} />
               <Route path="/pix" element={<Pix />} />
@@ -55,8 +66,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
-          
-          {/* Elegant low-profile admin menu launcher */}
+
           <footer className="mt-12 text-center text-white/10 hover:text-white/30 transition-colors text-xs flex items-center justify-center gap-2 font-bold uppercase tracking-widest select-none">
             <span>© Bolão Copa 2026</span>
             <span className="text-white/5">•</span>
