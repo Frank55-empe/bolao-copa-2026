@@ -5,8 +5,10 @@ import Matches from './pages/Matches';
 import Predict from './pages/Predict';
 import Pix from './pages/Pix';
 import Admin from './pages/Admin';
-import mascotsBg from './assets/images/world_cup_mascots_background_1779791199132.png';
 import { Settings } from 'lucide-react';
+
+// Importa a imagem via Vite (resolve corretamente no build)
+const mascotsBg = new URL('./assets/images/world_cup_mascots_background_1779791199132.png', import.meta.url).href;
 
 export type UserData = {
   name: string;
