@@ -1,0 +1,37 @@
+name: Deploy Bolão Mundial 2026
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Garante que config.js está no dist (por segurança)
+      - name: Garantir config.js no dist
+        run: |
+          cp config.js dist/config.js
+          echo "Arquivos no dist:"
+          ls -la dist/
+          ls -la dist/assets/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
