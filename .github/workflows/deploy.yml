@@ -1,5 +1,4 @@
-- name: Debug index.html
-  run: cat dist/index.html
+name: Deploy bolao-copa-2026
 
 on:
   push:
