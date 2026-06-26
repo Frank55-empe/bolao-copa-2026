@@ -24,7 +24,7 @@ function copyConfigJs(): Plugin {
 
 export default defineConfig(() => ({
   // ✅ base com o nome EXATO do repositório no GitHub
-  base: '/bolao-brasil-2026/',
+  base: '/bolao-copa-2026/',
   plugins: [react(), tailwindcss(), copyConfigJs()],
   resolve: {
     alias: { '@': path.resolve(__dirname, '.') },
@@ -34,3 +34,4 @@ export default defineConfig(() => ({
     watch: process.env.DISABLE_HMR === 'true' ? null : {},
   },
 }));
+
