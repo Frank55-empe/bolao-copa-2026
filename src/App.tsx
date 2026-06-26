@@ -6,6 +6,7 @@ import Predict from './pages/Predict';
 import Pix from './pages/Pix';
 import Admin from './pages/Admin';
 import mascotsBg from './assets/images/world_cup_mascots_background_1779791199132.png';
+import mascotsBgMobile from './assets/images/bg-mobile.png'; // ← adicione esta linha
 import { Settings } from 'lucide-react';
 
 export type UserData = {
