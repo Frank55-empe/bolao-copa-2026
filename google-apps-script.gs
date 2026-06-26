@@ -1,4 +1,4 @@
-/**
+**
  * ╔══════════════════════════════════════════════════════════════════╗
  * ║         BOLÃO COPA 2026 — GOOGLE APPS SCRIPT v6.0              ║
  * ╚══════════════════════════════════════════════════════════════════╝
@@ -92,25 +92,42 @@ function route(action, data, cb) {
 
     // ── GET_MATCHES ──────────────────────────────────────────────
     if (action === 'GET_MATCHES') {
-      var rows = readSheet('Matches');
-      var matches = rows.map(function(r) {
-        return {
-          id:           String(r.id          || '').trim(),
-          teamA:        String(r.teamA       || '').trim(),
-          teamAFlag:    String(r.teamAFlag   || '').trim(),
-          teamB:        String(r.teamB       || '').trim(),
-          teamBFlag:    String(r.teamBFlag   || '').trim(),
-          date:         String(r.date        || '').trim(),
-          time:         String(r.time        || '').trim(),
-          stadium:      String(r.stadium     || '').trim(),
-          round:        String(r.round       || '').trim(),
-          status:       String(r.status      || 'PENDING').trim(),
-          resultGoalsA: r.resultGoalsA !== '' && r.resultGoalsA != null ? Number(r.resultGoalsA) : null,
-          resultGoalsB: r.resultGoalsB !== '' && r.resultGoalsB != null ? Number(r.resultGoalsB) : null,
-        };
-      }).filter(function(m) { return m.id && m.teamA && m.teamB; });
-      return jsonResp({ success: true, matches: matches }, cb);
+  var rows = readSheet('Matches');
+  var matches = rows.map(function(r) {
+    // Cells formatadas como Data/Hora chegam como objetos Date — formatar explicitamente
+    var dateVal = r.date;
+    var timeVal = r.time;
+
+    if (dateVal instanceof Date) {
+      dateVal = Utilities.formatDate(dateVal, 'America/Sao_Paulo', 'dd/MM/yyyy');
+    } else {
+      dateVal = String(dateVal || '').trim();
     }
+
+    if (timeVal instanceof Date) {
+      timeVal = Utilities.formatDate(timeVal, 'America/Sao_Paulo', 'HH:mm');
+    } else {
+      timeVal = String(timeVal || '').trim();
+    }
+
+    return {
+      id:           String(r.id          || '').trim(),
+      teamA:        String(r.teamA       || '').trim(),
+      teamAFlag:    String(r.teamAFlag   || '').trim(),
+      teamB:        String(r.teamB       || '').trim(),
+      teamBFlag:    String(r.teamBFlag   || '').trim(),
+      date:         dateVal,
+      time:         timeVal,
+      stadium:      String(r.stadium     || '').trim(),
+      round:        String(r.round       || '').trim(),
+      status:       String(r.status      || 'PENDING').trim(),
+      resultGoalsA: r.resultGoalsA !== '' && r.resultGoalsA != null ? Number(r.resultGoalsA) : null,
+      resultGoalsB: r.resultGoalsB !== '' && r.resultGoalsB != null ? Number(r.resultGoalsB) : null,
+    };
+  }).filter(function(m) { return m.id && m.teamA && m.teamB; });
+  return jsonResp({ success: true, matches: matches }, cb);
+}
+
 
     // ── GET_SETTINGS ─────────────────────────────────────────────
     // Retorna objeto {chave: valor} — NÃO array
