@@ -1,4 +1,5 @@
-name: Deploy Bolão Mundial 2026
+- name: Debug index.html
+  run: cat dist/index.html
 
 on:
   push:
