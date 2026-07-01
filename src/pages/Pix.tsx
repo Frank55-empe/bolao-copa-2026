@@ -17,7 +17,7 @@ export default function Pix() {
   } | null;
 
   const [pixValue, setPixValue] = useState('20.00');
-  const [pixKey, setPixKey] = useState('bolao2026@email.com');
+  const [pixKey, setPixKey] = useState('35991717912');
   const [copied, setCopied] = useState(false);
   const [adminPhone, setAdminPhone] = useState('35991717912');
   const [customWhatsapp, setCustomWhatsapp] = useState(predictionState?.whatsapp || '');
