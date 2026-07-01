@@ -178,7 +178,6 @@ export default function Pix() {
         <h2 className="text-xl md:text-2xl title-display font-black tracking-widest text-[#FFCD00] mb-1">PALPITE SALVO!</h2>
         <p className="text-white/60 text-xs mb-6 font-medium px-4">
           Agora realize o pagamento via Pix para confirmar sua participação!
-          PIX: 35991717912 - FRANK DE SOUZA BORGES
         </p>
 
         {/* Ticket do palpite */}
