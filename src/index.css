@@ -6,62 +6,12 @@
 /* ── Reset / base ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body, #root {
-  min-height: 100%;
-}
-
 body {
   font-family: 'Inter', sans-serif;
   background: #020D1F;
   color: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* ── Camadas de fundo responsivo ─────────────────────────────────────────── */
-/*
-  COMO USAR:
-  1. Coloque sua imagem de DESKTOP em:  src/assets/images/bg-desktop.jpg
-  2. Coloque sua imagem de MOBILE em:   src/assets/images/bg-mobile.jpg
-  3. Substitua os caminhos abaixo pelos nomes corretos dos seus arquivos.
-
-  As duas divs ficam fixas atrás de todo conteúdo (z-index: 0).
-  No celular/tablet (< 768px): aparece bg-mobile, some bg-desktop.
-  No desktop (>= 768px):       aparece bg-desktop, some bg-mobile.
-*/
-
-.bg-layer-mobile,
-.bg-layer-desktop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: opacity 0.3s ease;
-}
-
-/* ── Imagem MOBILE (celular e tablet, telas até 767px) ────────────────── */
-.bg-layer-mobile {
-  background-image: url('/bg-mobile.jpg');
-  /* Troque "bg-mobile.jpg" pelo nome real da sua imagem mobile */
-}
-
-/* ── Imagem DESKTOP (computador, telas a partir de 768px) ─────────────── */
-.bg-layer-desktop {
-  background-image: url('/bg-desktop.jpg');
-  /* Troque "bg-desktop.jpg" pelo nome real da sua imagem desktop */
-}
-
-/* Lógica de exibição */
-@media (max-width: 767px) {
-  .bg-layer-desktop { display: none; }  /* esconde desktop no celular */
-  .bg-layer-mobile  { display: block; } /* mostra mobile no celular   */
-}
-
-@media (min-width: 768px) {
-  .bg-layer-mobile  { display: none; }  /* esconde mobile no desktop  */
-  .bg-layer-desktop { display: block; } /* mostra desktop no desktop  */
 }
 
 /* ── Utilitários personalizados ──────────────────────────────────────────── */

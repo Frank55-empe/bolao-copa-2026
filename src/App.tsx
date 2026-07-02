@@ -57,8 +57,12 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
 
     setError('');
     setLoading(true);
+
+    // Pequeno delay para feedback visual
     await new Promise(r => setTimeout(r, 600));
+
     const user: UserData = { name: nameTrimmed, whatsapp: phoneDigits };
+    // Salva no sessionStorage para persistir enquanto a aba está aberta
     sessionStorage.setItem('bolao_user', JSON.stringify(user));
     onLogin(user);
     setLoading(false);
@@ -66,6 +70,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10 relative">
+      {/* Background decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#009739]/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#FFCD00]/5 rounded-full blur-3xl" />
@@ -77,6 +82,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="w-full max-w-sm relative z-10"
       >
+        {/* Logo / Header */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
@@ -97,8 +103,10 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
           </p>
         </div>
 
+        {/* Card de Login */}
         <div className="glass-card rounded-3xl p-6 border border-white/10 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Nome */}
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-[#009739] mb-2">
                 <User className="w-3 h-3 inline-block mr-1" />
@@ -115,6 +123,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
               />
             </div>
 
+            {/* WhatsApp */}
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-[#009739] mb-2">
                 <Phone className="w-3 h-3 inline-block mr-1" />
@@ -131,6 +140,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
               />
             </div>
 
+            {/* Erro */}
             <AnimatePresence>
               {error && (
                 <motion.p
@@ -144,6 +154,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
               )}
             </AnimatePresence>
 
+            {/* Botão */}
             <button
               type="submit"
               disabled={loading}
@@ -169,10 +180,11 @@ function LoginScreen({ onLogin }: { onLogin: (user: UserData) => void }) {
   );
 }
 
-// ─── Layout principal (header + conteúdo) ─────────────────────────────────────
+// ─── Layout principal (header + conteúdo) ────────────────────────────────────
 function AppLayout({ user, onLogout }: { user: UserData; onLogout: () => void }) {
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Header */}
       <header className="w-full border-b border-white/5 bg-black/20 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -196,6 +208,7 @@ function AppLayout({ user, onLogout }: { user: UserData; onLogout: () => void })
         </div>
       </header>
 
+      {/* Conteúdo */}
       <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/jogos" replace />} />
@@ -213,6 +226,7 @@ function AppLayout({ user, onLogout }: { user: UserData; onLogout: () => void })
 export default function App() {
   const [user, setUser] = useState<UserData | null>(null);
 
+  // Recarrega usuário do sessionStorage ao montar (evita perder sessão no F5)
   useEffect(() => {
     const saved = sessionStorage.getItem('bolao_user');
     if (saved) {
@@ -231,16 +245,7 @@ export default function App() {
 
   return (
     <HashRouter>
-      {/* ── Fundo responsivo ─────────────────────────────────────────────────
-          Coloque as imagens em:
-            src/assets/images/bg-desktop.jpg  (para computador)
-            src/assets/images/bg-mobile.jpg   (para celular/tablet)
-          As classes md:hidden / hidden md:block fazem a troca automática.
-      ──────────────────────────────────────────────────────────────────── */}
-      <div className="bg-layer-mobile" aria-hidden="true" />
-      <div className="bg-layer-desktop" aria-hidden="true" />
-
-      <div className="min-h-screen relative z-10">
+      <div className="min-h-screen bg-gradient-to-br from-[#020D1F] via-[#041E42] to-[#020D1F]">
         <AnimatePresence mode="wait">
           {!user ? (
             <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
