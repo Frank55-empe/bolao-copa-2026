@@ -1,448 +1,455 @@
-/**
- * BOLÃO BRASIL 2026 - GOOGLE APPS SCRIPT (BACKEND COMPLETO)
+**
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║         BOLÃO COPA 2026 — GOOGLE APPS SCRIPT v6.0              ║
+ * ╚══════════════════════════════════════════════════════════════════╝
  *
- * COMO CONFIGURAR:
- * 1. Crie uma planilha no Google Sheets (planilhas.google.com)
- * 2. Crie 3 abas renomeadas EXATAMENTE para: Matches | Predictions | Settings
+ * INSTALAÇÃO (passo a passo):
+ * 1. Abra sua planilha Google Sheets
+ * 2. Menu: Extensões > Apps Script
+ * 3. Apague TUDO e cole este arquivo inteiro
+ * 4. Salve (Ctrl+S)
+ * 5. Execute: criarEstruturaPlanilha()  → autorize quando pedir
+ * 6. Menu: Implantar > Nova implantação
+ *    - Tipo: App da Web
+ *    - Executar como: EU (sua conta Google)
+ *    - Quem acessa: Qualquer pessoa (anônimo)
+ *    - Clique em Implantar e copie a URL
+ * 7. Cole a URL em src/services/api.ts na constante SHEETS_API_URL
  *
- * Aba "Matches" — cabeçalho linha 1 (A1:L1):
- *   id | teamA | teamAFlag | teamB | teamBFlag | date | time | stadium | round | resultGoalsA | resultGoalsB | status
- *
- * Aba "Predictions" — cabeçalho linha 1 (A1:H1):
- *   id | matchId | name | whatsapp | goalsA | goalsB | statusPix | createdAt
- *
- * Aba "Settings" — cabeçalho linha 1 (A1:B1):
- *   key | value
- *
- * 3. Menu Extensões > Apps Script > cole este código (substituindo tudo)
- * 4. Implantar > Nova implantação > Tipo: App da Web
- *    Executar como: Eu | Acesso: Qualquer pessoa
- * 5. Copie a URL gerada e cole em config.js → CONFIG.API_URL
- *
- * ════════════════════════════════════════════════════════════
- * NOTIFICAÇÃO AUTOMÁTICA DE PAGAMENTO CONFIRMADO (WhatsApp)
- * ════════════════════════════════════════════════════════════
- * 6. Para ativar o envio automático de WhatsApp quando o admin
- *    escrever "PAGO" na coluna statusPix:
- *
- *    a) No editor do Apps Script, clique no ícone de relógio
- *       (Gatilhos / Triggers) no menu lateral esquerdo.
- *    b) Clique em "+ Adicionar gatilho" (canto inferior direito).
- *    c) Configure assim:
- *         Função a executar : onEditTrigger
- *         Tipo de evento    : Da planilha → Ao editar
- *         Implantação       : Cabeçalho (não usar implantação)
- *    d) Clique em Salvar e autorize as permissões.
- *
- *    Pronto! Toda vez que você digitar "PAGO" (qualquer
- *    capitalização) na coluna statusPix da aba Predictions,
- *    o link do WhatsApp com a mensagem de confirmação será
- *    aberto automaticamente no seu navegador.
+ * ATENÇÃO: Sempre que modificar o script, faça uma NOVA implantação
+ * (não edite a existente) para garantir que o cache seja atualizado.
  */
 
-// ─────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════════════════════════
 
-function lockWrapper(callback) {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(10000);
-  try { return callback(); }
-  finally { lock.releaseLock(); }
+function jsonResp(obj, cb) {
+  var json = JSON.stringify(obj);
+  if (cb) {
+    var out = ContentService.createTextOutput(cb + '(' + json + ');');
+    out.setMimeType(ContentService.MimeType.JAVASCRIPT);
+    return out;
+  }
+  var out = ContentService.createTextOutput(json);
+  out.setMimeType(ContentService.MimeType.JSON);
+  return out;
 }
 
-function jsonResult(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+function getSheet(name) {
+  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
 }
 
-function readSheetAsJson(sheetName) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+// Lê uma aba e retorna array de objetos {coluna: valor}
+function readSheet(name) {
+  var sheet = getSheet(name);
   if (!sheet) return [];
   var data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
-  var headers = data[0];
-  var result = [];
+  if (data.length < 2) return [];
+  var headers = data[0].map(function(h) { return String(h).trim(); });
+  var rows = [];
   for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var allEmpty = row.every(function(c) { return c === '' || c === null || c === undefined; });
+    if (allEmpty) continue;
     var obj = {};
     for (var j = 0; j < headers.length; j++) {
-      obj[headers[j]] = data[i][j];
+      obj[headers[j]] = row[j];
     }
-    result.push(obj);
+    rows.push(obj);
   }
-  return result;
+  return rows;
 }
 
-// ─────────────────────────────────────────────────────────────
-// MENSAGEM DE BOAS-VINDAS — enviada ao receber um novo palpite
-// ─────────────────────────────────────────────────────────────
-//
-// Chamada automaticamente dentro de SUBMIT_PREDICTION sempre
-// que um participante registra um palpite via aplicativo.
-// Abre um popup para o admin com o botão do WhatsApp já pronto.
-
-function enviarBoasVindas(nome, whatsapp, teamA, goalsA, goalsB, teamB, dataJogo, horaJogo) {
-  try {
-    var numero = '55' + String(whatsapp).replace(/\D/g, '');
-    if (numero.length < 12) return;
-
-    var msg =
-      '⚽ *BOLÃO COPA 2026* ⚽\n' +
-      '━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-      '🎉 *Seja bem-vindo(a) ao Bolão, ' + nome + '!*\n\n' +
-      'Recebemos seu palpite com sucesso. Agora é só torcer! 🤞\n\n' +
-      '🎯 *Seu palpite registrado:*\n' +
-      '   ' + teamA + ' *' + goalsA + ' x ' + goalsB + '* ' + teamB + '\n' +
-      (dataJogo ? '   📅 ' + dataJogo + (horaJogo ? ' às ' + horaJogo : '') + '\n' : '') +
-      '\n' +
-      '━━━━━━━━━━━━━━━━━━━━━━━\n' +
-      '💳 *Para confirmar sua participação,\n' +
-      'efetue o pagamento via PIX:*\n\n' +
-      '📱 *Chave PIX (celular):*\n' +
-      '   35991717912\n\n' +
-      '👤 *Favorecido:*\n' +
-      '   Frank de Souza Borges\n\n' +
-      'Após o pagamento, envie o comprovante\n' +
-      'para que seu palpite seja validado. ✅\n\n' +
-      '━━━━━━━━━━━━━━━━━━━━━━━\n' +
-      '🍀 *BOA SORTE!!!* 🍀';
-
-    var waUrl = 'https://api.whatsapp.com/send?phone=' + numero +
-                '&text=' + encodeURIComponent(msg);
-
-    var ui = SpreadsheetApp.getUi();
-    var html = HtmlService.createHtmlOutput(
-      '<html><body style="font-family:Arial,sans-serif;padding:20px;">' +
-      '<h3 style="color:#009739;">⚽ Novo palpite recebido!</h3>' +
-      '<p>Clique no botão abaixo para enviar a mensagem de boas-vindas para <strong>' + nome + '</strong>:</p>' +
-      '<a href="' + waUrl + '" target="_blank" ' +
-      'style="display:inline-block;background:#25D366;color:white;padding:12px 24px;' +
-      'border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">' +
-      '📲 Enviar Boas-Vindas</a>' +
-      '<p style="color:#555;font-size:13px;margin-top:14px;">' +
-      'Palpite: <strong>' + teamA + ' ' + goalsA + ' x ' + goalsB + ' ' + teamB + '</strong></p>' +
-      '<p style="color:#888;font-size:12px;margin-top:4px;">Número: ' + numero + '</p>' +
-      '</body></html>'
-    ).setWidth(420).setHeight(240);
-
-    ui.showModalDialog(html, '📲 Boas-vindas — ' + nome);
-  } catch (err) {
-    console.error('enviarBoasVindas error:', err);
-  }
-}
-
-// ─────────────────────────────────────────────
-// NOTIFICAÇÃO AUTOMÁTICA VIA WHATSAPP
-// ─────────────────────────────────────────────
-//
-// Este gatilho é disparado sempre que qualquer célula da planilha
-// for editada. Ele verifica se:
-//   • a edição foi na aba "Predictions"
-//   • a coluna editada é "statusPix" (coluna G = índice 7)
-//   • o novo valor digitado é "PAGO" (qualquer capitalização)
-//
-// Se tudo bater, monta a mensagem de confirmação e abre o
-// WhatsApp Web no navegador do admin com o link já preenchido.
-//
-// IMPORTANTE: registre esta função como gatilho "Ao editar"
-// conforme as instruções no cabeçalho deste arquivo.
-
-function onEditTrigger(e) {
-  try {
-    var range = e.range;
-    var sheet = range.getSheet();
-
-    // Só age na aba Predictions
-    if (sheet.getName() !== 'Predictions') return;
-
-    // Coluna G (índice 7) = statusPix
-    // Cabeçalho: id(1) | matchId(2) | name(3) | whatsapp(4) | goalsA(5) | goalsB(6) | statusPix(7) | createdAt(8)
-    var STATUS_PIX_COL = 7;
-    if (range.getColumn() !== STATUS_PIX_COL) return;
-
-    // Verifica se o novo valor é "PAGO" (case-insensitive)
-    var novoValor = String(e.value || '').trim().toUpperCase();
-    if (novoValor !== 'PAGO') return;
-
-    // Lê os dados da linha editada
-    var row      = range.getRow();
-    var rowData  = sheet.getRange(row, 1, 1, 8).getValues()[0];
-
-    var matchId  = String(rowData[1]).trim();
-    var nome     = String(rowData[2]).trim();
-    var whatsapp = String(rowData[3]).trim().replace(/\D/g, '');
-    var goalsA   = rowData[4];
-    var goalsB   = rowData[5];
-
-    if (!whatsapp || whatsapp.length < 10) return;
-
-    // Busca os times do jogo correspondente
-    var matchSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Matches');
-    var teamA = 'Time A';
-    var teamB = 'Time B';
-    var dataJogo = '';
-    var horaJogo = '';
-
-    if (matchSheet) {
-      var matchData = matchSheet.getDataRange().getValues();
-      for (var i = 1; i < matchData.length; i++) {
-        if (String(matchData[i][0]).trim() === matchId) {
-          teamA    = String(matchData[i][1]).trim();
-          teamB    = String(matchData[i][3]).trim();
-          dataJogo = String(matchData[i][5]).trim();
-          horaJogo = String(matchData[i][6]).trim();
-          break;
-        }
-      }
-    }
-
-    // ── Monta a mensagem de confirmação ──────────────────────
-    var msg =
-      '🏆 *BOLÃO COPA 2026* 🏆\n' +
-      '━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-      '✅ *PALPITE CONFIRMADO!*\n\n' +
-      'Olá, *' + nome + '*! Seu pagamento foi recebido e seu palpite está oficialmente registrado no bolão.\n\n' +
-      '⚽ *Jogo:*\n' +
-      '   ' + teamA + ' x ' + teamB + '\n' +
-      (dataJogo ? '   📅 ' + dataJogo + (horaJogo ? ' às ' + horaJogo : '') + '\n' : '') +
-      '\n' +
-      '🎯 *Seu palpite:*\n' +
-      '   ' + teamA + ' *' + goalsA + ' x ' + goalsB + '* ' + teamB + '\n\n' +
-      '━━━━━━━━━━━━━━━━━━━━━━━\n' +
-      '🍀 *BOA SORTE!!!* 🍀';
-
-    // Formata o número com DDI 55 (Brasil)
-    var numero = '55' + whatsapp;
-
-    // Abre o WhatsApp Web no navegador do admin com a mensagem pronta
-    var waUrl = 'https://api.whatsapp.com/send?phone=' + numero +
-                '&text=' + encodeURIComponent(msg);
-
-    // Exibe um popup no Sheets com o link (o admin clica para abrir)
-    var ui = SpreadsheetApp.getUi();
-    var html = HtmlService.createHtmlOutput(
-      '<html><body style="font-family:Arial,sans-serif;padding:20px;">' +
-      '<h3 style="color:#128C7E;">✅ Pagamento confirmado!</h3>' +
-      '<p>Clique no botão abaixo para enviar a mensagem de confirmação para <strong>' + nome + '</strong> no WhatsApp:</p>' +
-      '<a href="' + waUrl + '" target="_blank" ' +
-      'style="display:inline-block;background:#25D366;color:white;padding:12px 24px;' +
-      'border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">' +
-      '📲 Abrir WhatsApp</a>' +
-      '<p style="color:#888;font-size:12px;margin-top:16px;">Número: ' + numero + '</p>' +
-      '</body></html>'
-    ).setWidth(400).setHeight(220);
-
-    ui.showModalDialog(html, '📲 Enviar confirmação — ' + nome);
-
-  } catch (err) {
-    // Falha silenciosa para não interromper a edição do admin
-    console.error('onEditTrigger error:', err);
-  }
-}
-
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 // ENTRY POINTS
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 
 function doGet(e) {
-  var action  = e.parameter.action || '';
+  var action  = e.parameter.action   || '';
+  var cb      = e.parameter.callback || null;
   var payload = {};
   if (e.parameter.payload) {
-    try { payload = JSON.parse(e.parameter.payload); }
-    catch(err) { return jsonResult({ success: false, error: 'payload JSON inválido: ' + err }); }
+    try { payload = JSON.parse(e.parameter.payload); } catch(err) {}
   }
-  return handleRequest(action, payload);
+  return route(action, payload, cb);
 }
 
 function doPost(e) {
-  var data = {};
-  if (e.postData && e.postData.contents) {
-    try { data = JSON.parse(e.postData.contents); }
-    catch(err) { return jsonResult({ success: false, error: 'body JSON inválido' }); }
-  }
-  return handleRequest(data.action || '', data);
+  var payload = {};
+  try { payload = JSON.parse(e.postData.contents); } catch(err) {}
+  var action = payload.action || e.parameter.action || '';
+  var cb     = e.parameter.callback || null;
+  return route(action, payload, cb);
 }
 
-// ─────────────────────────────────────────────
-// HANDLER CENTRAL
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// ROTEADOR
+// ═══════════════════════════════════════════════════════════════════
 
-function handleRequest(action, data) {
+function route(action, data, cb) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
 
+    // ── GET_MATCHES ──────────────────────────────────────────────
     if (action === 'GET_MATCHES') {
-      return jsonResult({ matches: readSheetAsJson('Matches') });
+  var rows = readSheet('Matches');
+  var matches = rows.map(function(r) {
+    // Cells formatadas como Data/Hora chegam como objetos Date — formatar explicitamente
+    var dateVal = r.date;
+    var timeVal = r.time;
+
+    if (dateVal instanceof Date) {
+      dateVal = Utilities.formatDate(dateVal, 'America/Sao_Paulo', 'dd/MM/yyyy');
+    } else {
+      dateVal = String(dateVal || '').trim();
     }
 
+    if (timeVal instanceof Date) {
+      timeVal = Utilities.formatDate(timeVal, 'America/Sao_Paulo', 'HH:mm');
+    } else {
+      timeVal = String(timeVal || '').trim();
+    }
+
+    return {
+      id:           String(r.id          || '').trim(),
+      teamA:        String(r.teamA       || '').trim(),
+      teamAFlag:    String(r.teamAFlag   || '').trim(),
+      teamB:        String(r.teamB       || '').trim(),
+      teamBFlag:    String(r.teamBFlag   || '').trim(),
+      date:         dateVal,
+      time:         timeVal,
+      stadium:      String(r.stadium     || '').trim(),
+      round:        String(r.round       || '').trim(),
+      status:       String(r.status      || 'PENDING').trim(),
+      resultGoalsA: r.resultGoalsA !== '' && r.resultGoalsA != null ? Number(r.resultGoalsA) : null,
+      resultGoalsB: r.resultGoalsB !== '' && r.resultGoalsB != null ? Number(r.resultGoalsB) : null,
+    };
+  }).filter(function(m) { return m.id && m.teamA && m.teamB; });
+  return jsonResp({ success: true, matches: matches }, cb);
+}
+
+
+    // ── GET_SETTINGS ─────────────────────────────────────────────
+    // Retorna objeto {chave: valor} — NÃO array
     if (action === 'GET_SETTINGS') {
-      var arr = readSheetAsJson('Settings');
-      var settings = {};
-      arr.forEach(function(row) { settings[row['key']] = row['value']; });
-      return jsonResult({ settings: settings });
+      var rows  = readSheet('Settings');
+      var cfg   = {};
+      rows.forEach(function(r) {
+        var k = String(r.key   || '').trim();
+        var v = String(r.value || '').trim();
+        if (k) cfg[k] = v;
+      });
+      return jsonResp({ success: true, settings: cfg }, cb);
     }
 
+    // ── GET_ALL_PREDICTIONS ──────────────────────────────────────
     if (action === 'GET_ALL_PREDICTIONS') {
-      return jsonResult({ predictions: readSheetAsJson('Predictions') });
-    }
-
-    if (action === 'GET_STATS') {
-      var matchId = data.matchId;
-      var preds   = readSheetAsJson('Predictions');
-      var counts  = {};
-      preds.forEach(function(p) {
-        if (p.matchId == matchId) {
-          var key = p.goalsA + '-' + p.goalsB;
-          if (!counts[key]) counts[key] = { goalsA: p.goalsA, goalsB: p.goalsB, count: 0 };
-          counts[key].count++;
-        }
+      var rows  = readSheet('Predictions');
+      var preds = rows.map(function(r) {
+        return {
+          id:         r.id,
+          matchId:    String(r.matchId    || '').trim(),
+          name:       String(r.name       || '').trim(),
+          whatsapp:   String(r.whatsapp   || '').trim(),
+          goalsA:     Number(r.goalsA),
+          goalsB:     Number(r.goalsB),
+          statusPix:  String(r.statusPix  || 'PENDING').trim(),
+          createdAt:  String(r.createdAt  || '').trim(),
+        };
       });
-      var arr = Object.keys(counts).map(function(k) { return counts[k]; });
-      arr.sort(function(a, b) { return b.count - a.count; });
-      return jsonResult({ stats: arr.slice(0, 3) });
+      return jsonResp({ success: true, predictions: preds }, cb);
     }
 
+    // ── CHECK_DUPLICATES ─────────────────────────────────────────
     if (action === 'CHECK_DUPLICATES') {
-      var preds = readSheetAsJson('Predictions');
-      var count = 0;
-      preds.forEach(function(p) {
-        if (p.matchId == data.matchId && p.goalsA == data.goalsA && p.goalsB == data.goalsB) count++;
+      var all = readSheet('Predictions');
+      var cnt = 0;
+      all.forEach(function(r) {
+        if (String(r.matchId).trim() === String(data.matchId).trim() &&
+            Number(r.goalsA) === Number(data.goalsA) &&
+            Number(r.goalsB) === Number(data.goalsB)) cnt++;
       });
-      return jsonResult({ count: count });
+      return jsonResp({ success: true, count: cnt }, cb);
     }
 
-    if (action === 'SAVE_MATCH') {
-      return lockWrapper(function() {
-        var sheet = ss.getSheetByName('Matches');
-        var m     = data.match;
-        var raw   = sheet.getDataRange().getValues();
-        var rowIdx = -1;
-        for (var i = 1; i < raw.length; i++) {
-          if (raw[i][0] == m.id) { rowIdx = i + 1; break; }
-        }
-        var goalsA = (m.resultGoalsA !== undefined && m.resultGoalsA !== null) ? m.resultGoalsA : '';
-        var goalsB = (m.resultGoalsB !== undefined && m.resultGoalsB !== null) ? m.resultGoalsB : '';
-        var rowData = [m.id, m.teamA, m.teamAFlag, m.teamB, m.teamBFlag, m.date, m.time, m.stadium, m.round, goalsA, goalsB, m.status || 'PENDING'];
-        if (rowIdx > -1) {
-          sheet.getRange(rowIdx, 1, 1, 12).setValues([rowData]);
-        } else {
-          sheet.appendRow(rowData);
-        }
-        return jsonResult({ success: true });
+    // ── GET_STATS ────────────────────────────────────────────────
+    if (action === 'GET_STATS') {
+      var all = readSheet('Predictions');
+      var groups = {};
+      all.forEach(function(r) {
+        if (String(r.matchId).trim() !== String(data.matchId).trim()) return;
+        var key = r.goalsA + '-' + r.goalsB;
+        if (!groups[key]) groups[key] = { goalsA: Number(r.goalsA), goalsB: Number(r.goalsB), count: 0 };
+        groups[key].count++;
       });
+      var arr = Object.keys(groups).map(function(k) { return groups[k]; });
+      arr.sort(function(a,b) { return b.count - a.count; });
+      return jsonResp({ success: true, stats: arr.slice(0, 3) }, cb);
     }
 
-    if (action === 'DELETE_MATCH') {
-      return lockWrapper(function() {
-        var sheet = ss.getSheetByName('Matches');
-        var raw   = sheet.getDataRange().getValues();
-        for (var i = 1; i < raw.length; i++) {
-          if (raw[i][0] == data.id) { sheet.deleteRow(i + 1); break; }
-        }
-        return jsonResult({ success: true });
-      });
-    }
-
-    if (action === 'SAVE_SETTINGS') {
-      return lockWrapper(function() {
-        var sheet = ss.getSheetByName('Settings');
-        if (!sheet) return jsonResult({ success: false, error: 'Aba Settings não encontrada' });
-        var raw    = sheet.getDataRange().getValues();
-        var toSave = data.settings;
-        Object.keys(toSave).forEach(function(k) {
-          var found = false;
-          for (var i = 1; i < raw.length; i++) {
-            if (raw[i][0] == k) {
-              sheet.getRange(i + 1, 2).setValue(toSave[k]);
-              found = true;
-              break;
-            }
-          }
-          if (!found) sheet.appendRow([k, toSave[k]]);
-        });
-        return jsonResult({ success: true });
-      });
-    }
-
+    // ── SUBMIT_PREDICTION ────────────────────────────────────────
     if (action === 'SUBMIT_PREDICTION') {
-      return lockWrapper(function() {
-        var sheet = ss.getSheetByName('Predictions');
-        var p     = data.prediction;
-        var id    = new Date().getTime();
-        sheet.appendRow([
-          id,
-          p.matchId,
-          p.name,
-          p.whatsapp,
-          p.goalsA,
-          p.goalsB,
-          'PENDING',
-          new Date().toISOString()
-        ]);
+      var sheet = getSheet('Predictions');
+      if (!sheet) return jsonResp({ success: false, error: 'Aba Predictions não encontrada' }, cb);
 
-        // ── Busca dados do jogo para compor a mensagem de boas-vindas ──
-        var teamA    = 'Time A';
-        var teamB    = 'Time B';
-        var dataJogo = '';
-        var horaJogo = '';
-        var matchSheet = ss.getSheetByName('Matches');
-        if (matchSheet) {
-          var matchRows = matchSheet.getDataRange().getValues();
-          for (var mi = 1; mi < matchRows.length; mi++) {
-            if (String(matchRows[mi][0]).trim() === String(p.matchId).trim()) {
-              teamA    = String(matchRows[mi][1]).trim();
-              teamB    = String(matchRows[mi][3]).trim();
-              dataJogo = String(matchRows[mi][5]).trim();
-              horaJogo = String(matchRows[mi][6]).trim();
-              break;
-            }
-          }
-        }
+      var p = data.prediction;
+      if (!p || !p.matchId || !p.name) {
+        return jsonResp({ success: false, error: 'Dados incompletos' }, cb);
+      }
 
-        // ── Abre popup de boas-vindas para o admin enviar via WhatsApp ──
-        enviarBoasVindas(p.name, p.whatsapp, teamA, p.goalsA, p.goalsB, teamB, dataJogo, horaJogo);
+      // Busca dados do jogo
+      var jogos  = readSheet('Matches');
+      var jogo   = {};
+      for (var i = 0; i < jogos.length; i++) {
+        if (String(jogos[i].id).trim() === String(p.matchId).trim()) { jogo = jogos[i]; break; }
+      }
 
-        return jsonResult({ success: true, predictionId: id });
-      });
+      var newId = new Date().getTime();
+      var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
+
+      sheet.appendRow([
+        newId,
+        String(p.matchId).trim(),
+        String(p.name).trim(),
+        String(p.whatsapp || '').trim(),
+        Number(p.goalsA),
+        Number(p.goalsB),
+        'PENDING',
+        agora,
+        String(jogo.teamA || '').trim(),
+        String(jogo.teamB || '').trim(),
+      ]);
+
+      return jsonResp({ success: true, predictionId: newId }, cb);
     }
 
+    // ── CONFIRM_PAYMENT ──────────────────────────────────────────
     if (action === 'CONFIRM_PAYMENT') {
-      return lockWrapper(function() {
-        var sheet    = ss.getSheetByName('Predictions');
-        var raw      = sheet.getDataRange().getValues();
-        var prediction;
-        for (var i = 1; i < raw.length; i++) {
-          if (raw[i][0] == data.id) {
-            sheet.getRange(i + 1, 7).setValue('PAID');
-            prediction = {
-              id: raw[i][0], matchId: raw[i][1], name: raw[i][2],
-              whatsapp: raw[i][3], goalsA: raw[i][4], goalsB: raw[i][5]
-            };
-            break;
-          }
-        }
-        if (!prediction) return jsonResult({ waLink: '' });
+      var sheet  = getSheet('Predictions');
+      var vals   = sheet.getDataRange().getValues();
+      var rowIdx = -1;
+      var pred   = null;
 
-        var matchSheet = ss.getSheetByName('Matches');
-        var matchesRaw = matchSheet.getDataRange().getValues();
-        var teamA = 'Time A', teamB = 'Time B';
-        for (var j = 1; j < matchesRaw.length; j++) {
-          if (matchesRaw[j][0] == prediction.matchId) {
-            teamA = matchesRaw[j][1];
-            teamB = matchesRaw[j][3];
-            break;
-          }
+      for (var i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(data.id)) {
+          rowIdx = i + 1;
+          pred   = { name: vals[i][2], whatsapp: vals[i][3], goalsA: vals[i][4], goalsB: vals[i][5], teamA: vals[i][8], teamB: vals[i][9] };
+          break;
         }
-        var msg  = 'Olá, ' + prediction.name + '! 🏆 Pagamento confirmado. Palpite: ' + teamA + ' ' + prediction.goalsA + ' x ' + prediction.goalsB + ' ' + teamB + '. Boa sorte!';
-        var link = 'https://api.whatsapp.com/send?phone=55' + prediction.whatsapp.replace(/\D/g, '') + '&text=' + encodeURIComponent(msg);
-        return jsonResult({ waLink: link });
-      });
+      }
+
+      if (!pred) return jsonResp({ success: false, error: 'Palpite não encontrado' }, cb);
+
+      sheet.getRange(rowIdx, 7).setValue('PAID')
+           .setBackground('#E8F5E9').setFontColor('#006400').setFontWeight('bold');
+
+      var msg  = 'Olá ' + pred.name + '! ✅ Pagamento CONFIRMADO! Seu palpite: ' +
+                 pred.teamA + ' ' + pred.goalsA + ' x ' + pred.goalsB + ' ' + pred.teamB +
+                 '. Boa sorte no Bolão Copa 2026! 🏆⚽';
+      var fone = String(pred.whatsapp).replace(/\D/g, '');
+      var link = 'https://api.whatsapp.com/send?phone=55' + fone + '&text=' + encodeURIComponent(msg);
+
+      return jsonResp({ success: true, waLink: link }, cb);
     }
 
-    return jsonResult({ success: false, error: 'Ação desconhecida: ' + action });
+    // ── SAVE_MATCH ───────────────────────────────────────────────
+    if (action === 'SAVE_MATCH') {
+      var sheet = getSheet('Matches');
+      if (!sheet) return jsonResp({ success: false, error: 'Aba Matches não encontrada' }, cb);
 
-  } catch (error) {
-    return jsonResult({ success: false, error: error.toString() });
+      var m    = data.match;
+      if (!m || !m.id) return jsonResp({ success: false, error: 'Match id ausente' }, cb);
+
+      var vals   = sheet.getDataRange().getValues();
+      var rowIdx = -1;
+      for (var i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]).trim() === String(m.id).trim()) { rowIdx = i + 1; break; }
+      }
+
+      var gA = (m.resultGoalsA != null && m.resultGoalsA !== '') ? Number(m.resultGoalsA) : '';
+      var gB = (m.resultGoalsB != null && m.resultGoalsB !== '') ? Number(m.resultGoalsB) : '';
+
+      var linha = [
+        String(m.id), String(m.teamA||''), String(m.teamAFlag||''),
+        String(m.teamB||''), String(m.teamBFlag||''), String(m.date||''),
+        String(m.time||''), String(m.stadium||''), String(m.round||''),
+        gA, gB, String(m.status||'PENDING')
+      ];
+
+      if (rowIdx > 0) {
+        sheet.getRange(rowIdx, 1, 1, 12).setValues([linha]);
+      } else {
+        sheet.appendRow(linha);
+      }
+      return jsonResp({ success: true }, cb);
+    }
+
+    // ── DELETE_MATCH ─────────────────────────────────────────────
+    if (action === 'DELETE_MATCH') {
+      var sheet = getSheet('Matches');
+      var vals  = sheet.getDataRange().getValues();
+      for (var i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]).trim() === String(data.id).trim()) { sheet.deleteRow(i + 1); break; }
+      }
+      return jsonResp({ success: true }, cb);
+    }
+
+    // ── SAVE_SETTINGS ────────────────────────────────────────────
+    if (action === 'SAVE_SETTINGS') {
+      var sheet    = getSheet('Settings');
+      if (!sheet) return jsonResp({ success: false, error: 'Aba Settings não encontrada' }, cb);
+
+      var updates  = data.settings || {};
+      var vals     = sheet.getDataRange().getValues();
+      var keys     = Object.keys(updates);
+
+      keys.forEach(function(chave) {
+        var valor = updates[chave];
+        var found = false;
+        for (var i = 1; i < vals.length; i++) {
+          if (String(vals[i][0]).trim() === String(chave).trim()) {
+            sheet.getRange(i + 1, 2).setValue(valor);
+            vals[i][1] = valor;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          sheet.appendRow([chave, valor]);
+          vals.push([chave, valor]);
+        }
+      });
+      return jsonResp({ success: true }, cb);
+    }
+
+    // ── SAVE_HISTORY_ENTRY ───────────────────────────────────────
+    if (action === 'SAVE_HISTORY_ENTRY') {
+      var sheet = getSheet('History');
+      if (!sheet) return jsonResp({ success: false, error: 'Aba History não encontrada' }, cb);
+
+      var h = data.entry;
+      if (!h) return jsonResp({ success: false, error: 'entry ausente' }, cb);
+
+      var vals   = sheet.getDataRange().getValues();
+      var rowIdx = -1;
+      for (var i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]).trim() === String(h.matchId).trim()) { rowIdx = i + 1; break; }
+      }
+
+      var winners = JSON.stringify(h.winners || []);
+      var closedAt = h.closedAt || Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
+
+      var linha = [
+        String(h.matchId), String(h.teamA||''), String(h.teamAFlag||''),
+        String(h.teamB||''), String(h.teamBFlag||''),
+        Number(h.resultGoalsA||0), Number(h.resultGoalsB||0),
+        Number(h.totalCollected||0), Number(h.prize||0),
+        Number(h.accumulated||0), winners, closedAt
+      ];
+
+      if (rowIdx > 0) {
+        sheet.getRange(rowIdx, 1, 1, 12).setValues([linha]);
+      } else {
+        sheet.appendRow(linha);
+      }
+      return jsonResp({ success: true }, cb);
+    }
+
+    return jsonResp({ success: false, error: 'Ação desconhecida: ' + action }, cb);
+
+  } catch(e) {
+    return jsonResp({ success: false, error: e.toString() }, cb);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SETUP — Execute UMA VEZ após colar o script
+// ═══════════════════════════════════════════════════════════════════
+
+function criarEstruturaPlanilha() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var verde = '#1a5276';
+  var white = '#ffffff';
+
+  // Predictions
+  var pred = ss.getSheetByName('Predictions') || ss.insertSheet('Predictions');
+  if (pred.getLastRow() === 0) {
+    pred.appendRow(['id','matchId','name','whatsapp','goalsA','goalsB','statusPix','createdAt','teamA','teamB']);
+  }
+  pred.getRange('1:1').setBackground(verde).setFontColor(white).setFontWeight('bold');
+  pred.setFrozenRows(1);
+
+  // Matches
+  var mtch = ss.getSheetByName('Matches') || ss.insertSheet('Matches');
+  if (mtch.getLastRow() === 0) {
+    mtch.appendRow(['id','teamA','teamAFlag','teamB','teamBFlag','date','time','stadium','round','resultGoalsA','resultGoalsB','status']);
+  }
+  mtch.getRange('1:1').setBackground(verde).setFontColor(white).setFontWeight('bold');
+  mtch.setFrozenRows(1);
+
+  // Settings
+  var cfg = ss.getSheetByName('Settings') || ss.insertSheet('Settings');
+  if (cfg.getLastRow() === 0) {
+    cfg.getRange(1,1,8,2).setValues([
+      ['key','value'],
+      ['pix_value','30.00'],
+      ['pix_key','00020126360014br.gov.bcb.pix0114+5535991717912520400005303986540530.005802BR5921FRANK DE SOUZA BORGES6006LAVRAS62060502Br63042ADA'],
+      ['active_match_id','m24'],
+      ['admin_phone','35991717912'],
+      ['accumulated_amount','0.00'],
+      ['regulamento','1. Cada palpite custa o valor definido por aposta.\n2. O palpite só é validado após confirmação do PIX.\n3. Premiação: 80% do valor arrecadado.\n4. Limite: 5 palpites idênticos por partida.\n5. Prazo: até 10 min antes do jogo.\n6. Múltiplos acertadores dividem o prêmio igualmente.\n7. Sem acertadores: prêmio acumula para a próxima rodada.'],
+    ]);
+  }
+  cfg.getRange('1:1').setBackground(verde).setFontColor(white).setFontWeight('bold');
+  cfg.setFrozenRows(1);
+  cfg.setColumnWidth(1, 220);
+  cfg.setColumnWidth(2, 600);
+
+  // History
+  var hist = ss.getSheetByName('History') || ss.insertSheet('History');
+  if (hist.getLastRow() === 0) {
+    hist.appendRow(['matchId','teamA','teamAFlag','teamB','teamBFlag','resultGoalsA','resultGoalsB','totalCollected','prize','accumulated','winners','closedAt']);
+  }
+  hist.getRange('1:1').setBackground('#0d6b38').setFontColor(white).setFontWeight('bold');
+  hist.setFrozenRows(1);
+
+  // Remove aba padrão vazia
+  ['Plan1','Sheet1','Página1'].forEach(function(nome) {
+    var aba = ss.getSheetByName(nome);
+    if (aba && ss.getSheets().length > 1) {
+      try { ss.deleteSheet(aba); } catch(e) {}
+    }
+  });
+
+  SpreadsheetApp.getUi().alert(
+    '✅ ESTRUTURA CRIADA!\n\n' +
+    'Abas: Predictions | Matches | Settings | History\n\n' +
+    'PRÓXIMOS PASSOS:\n' +
+    '1. Vá em: Implantar > Nova implantação\n' +
+    '2. Tipo: App da Web\n' +
+    '3. Executar como: EU\n' +
+    '4. Acesso: Qualquer pessoa\n' +
+    '5. Copie a URL e cole em src/services/api.ts\n\n' +
+    'Para cadastrar jogos: use o Painel Admin do app (/admin)'
+  );
+}
+
+/** Diagnóstico — mostra o que a planilha retorna */
+function testarGetSettings() {
+  var rows = readSheet('Settings');
+  var cfg  = {};
+  rows.forEach(function(r) {
+    var k = String(r.key || '').trim();
+    var v = String(r.value || '').trim();
+    if (k) cfg[k] = v;
+  });
+  Logger.log('Settings: ' + JSON.stringify(cfg, null, 2));
+  SpreadsheetApp.getUi().alert('Settings retornados:\n\n' + JSON.stringify(cfg, null, 2));
+}
+
+/** Diagnóstico — mostra os matches */
+function testarGetMatches() {
+  var rows = readSheet('Matches');
+  Logger.log('Matches (' + rows.length + '): ' + JSON.stringify(rows.slice(0,3), null, 2));
+  SpreadsheetApp.getUi().alert('Total de jogos: ' + rows.length + '\n\nPrimeiros 3:\n' + JSON.stringify(rows.slice(0,3), null, 2));
 }
