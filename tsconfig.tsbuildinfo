@@ -1,0 +1,1 @@
+{"root":["./config.js","./test.cjs","./vite.config.ts","./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/pages/admin.tsx","./src/pages/home.tsx","./src/pages/matches.tsx","./src/pages/pix.tsx","./src/pages/predict.tsx","./src/services/api.ts"],"version":"5.8.3"}
