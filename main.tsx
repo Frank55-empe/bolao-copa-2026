@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bolão Mundial 2026</title>
-    <script src="./config.js"></script>
+    <script src="/bolao-brasil-2026/config.js"></script>
     <script>
       (function() {
         var redirect = window.location.search.slice(1);
@@ -17,9 +17,10 @@
         }
       })();
     </script>
+    <script type="module" crossorigin src="/bolao-brasil-2026/assets/index-D2ojnmCQ.js"></script>
+    <link rel="stylesheet" crossorigin href="/bolao-brasil-2026/assets/index-D-0HSDRI.css">
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
