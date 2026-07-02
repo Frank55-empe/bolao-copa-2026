@@ -1,4 +1,4 @@
-export const GAS_URL = "https://script.google.com/macros/s/AKfycbwVjBOpiRYP4Xeqy9PONQJPe-8jlAGWXo48QA2UmvgIAQgANQgnJVHYYt95FROqVqUo2A/exec";
+export const GAS_URL = "https://script.google.com/macros/s/AKfycbwNjOHntPZkhBJ4MUMJrMFsC9qFv6k35ziUBBzuxnFiMQW-DbLql7VBuLPAfMNVqcLT/exec";
 
 export const api = {
   async get(action: string, params: Record<string, string> = {}) {
