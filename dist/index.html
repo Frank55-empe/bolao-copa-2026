@@ -4,27 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bolão Mundial 2026</title>
-    <!-- ✅ CORREÇÃO 3: config.js precisa ser carregado ANTES do app React -->
-    <script src="./config.js"></script>
+    <!-- Prevent fetch polyfills from crashing the app due to fetch getter -->
     <script>
-      (function() {
-        try {
-          const originalFetch = window.fetch;
-          Object.defineProperty(window, 'fetch', {
-            configurable: true,
-            enumerable: true,
-            get: function() { return originalFetch; },
-            set: function() { console.warn('Ignored fetch override'); }
-          });
-        } catch (e) {
-          console.error(e);
-        }
-      })();
+      try {
+        let originalFetch = window.fetch;
+        Object.defineProperty(window, 'fetch', {
+          get: function() { return originalFetch; },
+          set: function(val) { 
+            console.warn('Ignored overwrite of window.fetch'); 
+            // We do not overwrite originalFetch to keep the environment hook intact
+          },
+          configurable: true
+        });
+      } catch (e) {
+        console.error('Fetch protect failed:', e);
+      }
     </script>
-    <script type="module" crossorigin src="./assets/index-DTSJQtuC.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-B1gLL5LF.css">
+    <script type="module" crossorigin src="/bolao-brasil-2026/assets/index-C92l22rb.js"></script>
+    <link rel="stylesheet" crossorigin href="/bolao-brasil-2026/assets/index-BKTop_e0.css">
   </head>
   <body>
     <div id="root"></div>
   </body>
 </html>
+

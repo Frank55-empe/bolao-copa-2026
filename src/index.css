@@ -11,23 +11,13 @@
     text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   }
   .glass-card {
-    background-color: rgba(2, 13, 31, 0.85);
+    background-color: rgba(2, 13, 31, 0.85); /* Dark background for better contrast */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
-  .neon-glow-green {
-    box-shadow: 0 0 20px rgba(0, 151, 57, 0.4), 0 0 40px rgba(0, 151, 57, 0.2);
-  }
-  .neon-glow-yellow {
-    box-shadow: 0 0 20px rgba(255, 205, 0, 0.3), 0 0 40px rgba(255, 205, 0, 0.1);
-  }
   .text-shadow-strong {
     text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.8);
-  }
-  .title-display {
-    font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-    font-weight: 700;
   }
 }

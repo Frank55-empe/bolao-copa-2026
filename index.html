@@ -1,14 +1,29 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bolão Mundial 2026</title>
-    <!-- config.js carregado ANTES do React — define window.CONFIG.API_URL -->
-    <script src="./config.js"></script>
+    <!-- Prevent fetch polyfills from crashing the app due to fetch getter -->
+    <script>
+      try {
+        let originalFetch = window.fetch;
+        Object.defineProperty(window, 'fetch', {
+          get: function() { return originalFetch; },
+          set: function(val) { 
+            console.warn('Ignored overwrite of window.fetch'); 
+            // We do not overwrite originalFetch to keep the environment hook intact
+          },
+          configurable: true
+        });
+      } catch (e) {
+        console.error('Fetch protect failed:', e);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

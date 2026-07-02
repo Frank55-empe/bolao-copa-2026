@@ -1,251 +1,57 @@
-export type MatchData = {
-  id: string;
-  teamA: string;
-  teamAFlag: string;
-  teamB: string;
-  teamBFlag: string;
-  date: string;
-  time: string;
-  stadium: string;
-  round: string;
-  resultGoalsA?: number;
-  resultGoalsB?: number;
-  status?: 'PENDING' | 'FINISHED';
-};
+export const GAS_URL = "https://script.google.com/macros/s/AKfycbwVjBOpiRYP4Xeqy9PONQJPe-8jlAGWXo48QA2UmvgIAQgANQgnJVHYYt95FROqVqUo2A/exec";
 
-export type Prediction = {
-  id: number;
-  matchId: string;
-  name: string;
-  whatsapp: string;
-  goalsA: number;
-  goalsB: number;
-  teamA?: string;
-  teamB?: string;
-  teamAFlag?: string;
-  teamBFlag?: string;
-  date?: string;
-  time?: string;
-  statusPix: string;
-  createdAt: string;
-};
-
-const initialMatches: MatchData[] = [
-  { id: "m1",  teamA: "México",        teamAFlag: "https://flagcdn.com/w160/mx.png",     teamB: "África do Sul", teamBFlag: "https://flagcdn.com/w160/za.png",     date: "11/06/2026", time: "16:00", stadium: "Estadio Azteca, Cidade do México",          round: "Grupo A", status: "PENDING" },
-  { id: "m2",  teamA: "Coreia do Sul", teamAFlag: "https://flagcdn.com/w160/kr.png",     teamB: "Tchéquia",      teamBFlag: "https://flagcdn.com/w160/cz.png",     date: "11/06/2026", time: "23:00", stadium: "Estadio Akron, Zapopan",                   round: "Grupo A", status: "PENDING" },
-  { id: "m3",  teamA: "Canadá",        teamAFlag: "https://flagcdn.com/w160/ca.png",     teamB: "Bósnia",        teamBFlag: "https://flagcdn.com/w160/ba.png",     date: "12/06/2026", time: "16:00", stadium: "BMO Field, Toronto",                        round: "Grupo B", status: "PENDING" },
-  { id: "m4",  teamA: "EUA",           teamAFlag: "https://flagcdn.com/w160/us.png",     teamB: "Paraguai",      teamBFlag: "https://flagcdn.com/w160/py.png",     date: "12/06/2026", time: "22:00", stadium: "SoFi Stadium, Inglewood",                  round: "Grupo D", status: "PENDING" },
-  { id: "m5",  teamA: "Catar",         teamAFlag: "https://flagcdn.com/w160/qa.png",     teamB: "Suíça",         teamBFlag: "https://flagcdn.com/w160/ch.png",     date: "13/06/2026", time: "16:00", stadium: "Levi's Stadium, Santa Clara",               round: "Grupo B", status: "PENDING" },
-  { id: "m6",  teamA: "Brasil",        teamAFlag: "https://flagcdn.com/w160/br.png",     teamB: "Marrocos",      teamBFlag: "https://flagcdn.com/w160/ma.png",     date: "13/06/2026", time: "19:00", stadium: "MetLife Stadium, Nova Jersey",              round: "Grupo C", status: "PENDING" },
-  { id: "m7",  teamA: "Haiti",         teamAFlag: "https://flagcdn.com/w160/ht.png",     teamB: "Escócia",       teamBFlag: "https://flagcdn.com/w160/gb-sct.png", date: "13/06/2026", time: "22:00", stadium: "Gillette Stadium, Foxborough",              round: "Grupo C", status: "PENDING" },
-  { id: "m8",  teamA: "Alemanha",      teamAFlag: "https://flagcdn.com/w160/de.png",     teamB: "Curaçao",       teamBFlag: "https://flagcdn.com/w160/cw.png",     date: "14/06/2026", time: "14:00", stadium: "NRG Stadium, Houston",                     round: "Grupo E", status: "PENDING" },
-  { id: "m9",  teamA: "Holanda",       teamAFlag: "https://flagcdn.com/w160/nl.png",     teamB: "Japão",         teamBFlag: "https://flagcdn.com/w160/jp.png",     date: "14/06/2026", time: "17:00", stadium: "AT&T Stadium, Arlington",                  round: "Grupo F", status: "PENDING" },
-  { id: "m10", teamA: "Costa do Marfim",teamAFlag:"https://flagcdn.com/w160/ci.png",     teamB: "Equador",       teamBFlag: "https://flagcdn.com/w160/ec.png",     date: "14/06/2026", time: "20:00", stadium: "Lincoln Financial Field, Philadelphia",     round: "Grupo E", status: "PENDING" },
-  { id: "m11", teamA: "Espanha",       teamAFlag: "https://flagcdn.com/w160/es.png",     teamB: "Cabo Verde",    teamBFlag: "https://flagcdn.com/w160/cv.png",     date: "15/06/2026", time: "13:00", stadium: "Mercedes-Benz Stadium, Atlanta",           round: "Grupo H", status: "PENDING" },
-  { id: "m12", teamA: "Bélgica",       teamAFlag: "https://flagcdn.com/w160/be.png",     teamB: "Egito",         teamBFlag: "https://flagcdn.com/w160/eg.png",     date: "15/06/2026", time: "16:00", stadium: "Lumen Field, Seattle",                     round: "Grupo G", status: "PENDING" },
-  { id: "m13", teamA: "Arábia Saudita",teamAFlag: "https://flagcdn.com/w160/sa.png",     teamB: "Uruguai",       teamBFlag: "https://flagcdn.com/w160/uy.png",     date: "15/06/2026", time: "19:00", stadium: "Hard Rock Stadium, Miami",                 round: "Grupo H", status: "PENDING" },
-  { id: "m14", teamA: "França",        teamAFlag: "https://flagcdn.com/w160/fr.png",     teamB: "Senegal",       teamBFlag: "https://flagcdn.com/w160/sn.png",     date: "16/06/2026", time: "16:00", stadium: "MetLife Stadium, Nova Jersey",              round: "Grupo I", status: "PENDING" },
-  { id: "m15", teamA: "Iraque",        teamAFlag: "https://flagcdn.com/w160/iq.png",     teamB: "Noruega",       teamBFlag: "https://flagcdn.com/w160/no.png",     date: "16/06/2026", time: "19:00", stadium: "Gillette Stadium, Foxborough",              round: "Grupo I", status: "PENDING" },
-  { id: "m16", teamA: "Argentina",     teamAFlag: "https://flagcdn.com/w160/ar.png",     teamB: "Argélia",       teamBFlag: "https://flagcdn.com/w160/dz.png",     date: "16/06/2026", time: "22:00", stadium: "Arrowhead Stadium, Kansas City",            round: "Grupo J", status: "PENDING" },
-  { id: "m17", teamA: "Portugal",      teamAFlag: "https://flagcdn.com/w160/pt.png",     teamB: "Rep. D. Congo", teamBFlag: "https://flagcdn.com/w160/cd.png",     date: "17/06/2026", time: "14:00", stadium: "NRG Stadium, Houston",                     round: "Grupo K", status: "PENDING" },
-  { id: "m18", teamA: "Inglaterra",    teamAFlag: "https://flagcdn.com/w160/gb-eng.png", teamB: "Croácia",       teamBFlag: "https://flagcdn.com/w160/hr.png",     date: "17/06/2026", time: "17:00", stadium: "AT&T Stadium, Arlington",                  round: "Grupo L", status: "PENDING" },
-  { id: "m19", teamA: "Gana",          teamAFlag: "https://flagcdn.com/w160/gh.png",     teamB: "Panamá",        teamBFlag: "https://flagcdn.com/w160/pa.png",     date: "17/06/2026", time: "20:00", stadium: "BMO Field, Toronto",                        round: "Grupo L", status: "PENDING" },
-  { id: "m20", teamA: "Escócia",       teamAFlag: "https://flagcdn.com/w160/gb-sct.png", teamB: "Marrocos",      teamBFlag: "https://flagcdn.com/w160/ma.png",     date: "19/06/2026", time: "19:00", stadium: "Gillette Stadium, Foxborough",              round: "Grupo C", status: "PENDING" },
-  { id: "m21", teamA: "Brasil",        teamAFlag: "https://flagcdn.com/w160/br.png",     teamB: "Haiti",         teamBFlag: "https://flagcdn.com/w160/ht.png",     date: "19/06/2026", time: "21:30", stadium: "Lincoln Financial Field, Philadelphia",     round: "Grupo C", status: "PENDING" },
-  { id: "m22", teamA: "Argentina",     teamAFlag: "https://flagcdn.com/w160/ar.png",     teamB: "Áustria",       teamBFlag: "https://flagcdn.com/w160/at.png",     date: "22/06/2026", time: "14:00", stadium: "AT&T Stadium, Arlington",                  round: "Grupo J", status: "PENDING" },
-  { id: "m23", teamA: "França",        teamAFlag: "https://flagcdn.com/w160/fr.png",     teamB: "Iraque",        teamBFlag: "https://flagcdn.com/w160/iq.png",     date: "22/06/2026", time: "18:00", stadium: "Lincoln Financial Field, Philadelphia",     round: "Grupo I", status: "PENDING" },
-  { id: "m24", teamA: "Escócia",       teamAFlag: "https://flagcdn.com/w160/gb-sct.png", teamB: "Brasil",        teamBFlag: "https://flagcdn.com/w160/br.png",     date: "24/06/2026", time: "19:00", stadium: "Hard Rock Stadium, Miami",                  round: "Grupo C", status: "PENDING" },
-  { id: "m25", teamA: "Marrocos",      teamAFlag: "https://flagcdn.com/w160/ma.png",     teamB: "Haiti",         teamBFlag: "https://flagcdn.com/w160/ht.png",     date: "24/06/2026", time: "19:00", stadium: "Mercedes-Benz Stadium, Atlanta",            round: "Grupo C", status: "PENDING" },
-  { id: "m26", teamA: "Argélia",       teamAFlag: "https://flagcdn.com/w160/dz.png",     teamB: "Áustria",       teamBFlag: "https://flagcdn.com/w160/at.png",     date: "27/06/2026", time: "23:00", stadium: "Arrowhead Stadium, Kansas City",            round: "Grupo J", status: "PENDING" },
-  { id: "m27", teamA: "Jordânia",      teamAFlag: "https://flagcdn.com/w160/jo.png",     teamB: "Argentina",     teamBFlag: "https://flagcdn.com/w160/ar.png",     date: "27/06/2026", time: "23:00", stadium: "AT&T Stadium, Arlington",                  round: "Grupo J", status: "PENDING" },
-];
-
-const INITIAL_SETTINGS = {
-  pix_value: "30.00",
-  pix_key: "00020126360014br.gov.bcb.pix0114+5535991717912520400005303986540530.005802BR5921FRANK DE SOUZA BORGES6006LAVRAS62060502Br63042ADA",
-  active_match_id: "m6",
-  regulamento: "1. Cada palpite custa o valor definido por aposta.\n2. O palpite só será validado após a confirmação do pagamento via PIX.\n3. A premiação principal corresponderá a 80% do valor total arrecadado, sendo 20% destinados a despesas administrativas do bolão.\n4. O limite máximo de palpites idênticos (com o mesmo placar correto) é de 5 por partida. Após atingir este limite, o placar ficará indisponível.\n5. O prazo máximo para enviar ou mudar o palpite é de até 10 minutos antes do início de cada confronto.\n6. Em caso de empate e múltiplos acertadores do placar vencedor, os 80% do prêmio acumulado serão divididos entre eles em partes iguais.\n7. Caso não haja ganhadores na rodada (nenhum palpite acertar o placar final), o valor total do prêmio (80% da arrecadação) acumulará automaticamente para a próxima rodada.",
-  admin_phone: "35991717912",
-  accumulated_amount: "0.00"
-};
-
-// ✅ CORREÇÃO 3: URL do Google Sheets lida do config.js (declarado no index.html via <script>)
-// Fallback para VITE_SHEETS_API_URL se disponível
-function getSheetsUrl(): string {
-  // Tenta ler do objeto CONFIG global (config.js carregado via index.html)
-  if (typeof (window as any).CONFIG !== 'undefined' && (window as any).CONFIG.API_URL) {
-    return (window as any).CONFIG.API_URL as string;
-  }
-  // Fallback para variável de ambiente Vite (se disponível)
-  try {
-    const viteEnv = (import.meta as any).env;
-    if (viteEnv && viteEnv.VITE_SHEETS_API_URL) return viteEnv.VITE_SHEETS_API_URL as string;
-  } catch (_) { /* não disponível */ }
-  return '';
-}
-
-class ApiService {
-  private useMock(): boolean {
-    return !getSheetsUrl();
-  }
-
-  // ✅ CORREÇÃO 3: Envia TODAS as requisições como GET com ?action=X&payload=JSON
-  // O Google Apps Script recebe via doGet(e) -> e.parameter.action e e.parameter.payload
-  private async fetchSheets(action: string, payload?: any): Promise<any> {
-    const url = getSheetsUrl();
-    const params = new URLSearchParams({ action });
-    if (payload) {
-      params.set('payload', JSON.stringify(payload));
-    }
+export const api = {
+  async get(action: string, params: Record<string, string> = {}) {
+    const q = new URLSearchParams({ action, ...params }).toString();
     try {
-      const response = await fetch(`${url}?${params.toString()}`, {
-        method: 'GET',
-        redirect: 'follow',
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (err) {
-      console.error(`[API] Erro na action "${action}":`, err);
-      throw err;
-    }
-  }
-
-  // --- Matches ---
-  async getMatches(): Promise<MatchData[]> {
-    if (this.useMock()) {
-      const stored = localStorage.getItem('matches');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed.length > 0) return parsed;
+      const res = await fetch(`${GAS_URL}?${q}`, { redirect: 'follow' });
+      const data = await res.json();
+      if (!data || data.error) {
+         throw new Error(data?.error || 'Invalid response from GAS');
       }
-      return initialMatches;
-    }
-    const data = await this.fetchSheets('GET_MATCHES');
-    return data.matches?.length ? data.matches : initialMatches;
-  }
-
-  async saveMatch(match: MatchData): Promise<void> {
-    if (this.useMock()) {
-      const matches = await this.getMatches();
-      const idx = matches.findIndex(m => m.id === match.id);
-      if (idx >= 0) matches[idx] = match;
-      else matches.push({ ...match, id: match.id || Date.now().toString() });
-      localStorage.setItem('matches', JSON.stringify(matches));
-      return;
-    }
-    await this.fetchSheets('SAVE_MATCH', { match });
-  }
-
-  async deleteMatch(id: string): Promise<void> {
-    if (this.useMock()) {
-      const matches = await this.getMatches();
-      localStorage.setItem('matches', JSON.stringify(matches.filter(m => m.id !== id)));
-      return;
-    }
-    await this.fetchSheets('DELETE_MATCH', { id });
-  }
-
-  // --- Settings ---
-  async getSettings(): Promise<any> {
-    if (this.useMock()) {
-      return JSON.parse(localStorage.getItem('settings') || JSON.stringify(INITIAL_SETTINGS));
-    }
-    const data = await this.fetchSheets('GET_SETTINGS');
-    return data.settings || INITIAL_SETTINGS;
-  }
-
-  async saveSettings(settingsUpdate: any): Promise<void> {
-    if (this.useMock()) {
-      const current = await this.getSettings();
-      localStorage.setItem('settings', JSON.stringify({ ...current, ...settingsUpdate }));
-      return;
-    }
-    await this.fetchSheets('SAVE_SETTINGS', { settings: settingsUpdate });
-  }
-
-  // --- Predictions ---
-  async getAllPredictions(): Promise<Prediction[]> {
-    if (this.useMock()) {
-      return JSON.parse(localStorage.getItem('predictions') || '[]');
-    }
-    const data = await this.fetchSheets('GET_ALL_PREDICTIONS');
-    return data.predictions || [];
-  }
-
-  async getUserPredictions(whatsapp: string): Promise<Prediction[]> {
-    const all = await this.getAllPredictions();
-    const matches = await this.getMatches();
-    return all
-      .filter(p => p.whatsapp === whatsapp)
-      .map(p => {
-        const m = matches.find(mx => mx.id === p.matchId) || {} as MatchData;
-        return { ...p, teamA: m.teamA, teamB: m.teamB, teamAFlag: m.teamAFlag, teamBFlag: m.teamBFlag, date: m.date, time: m.time };
-      });
-  }
-
-  async checkDuplicates(matchId: string, goalsA: number, goalsB: number): Promise<number> {
-    if (this.useMock()) {
-      const all = await this.getAllPredictions();
-      return all.filter(p => p.matchId === matchId && p.goalsA === goalsA && p.goalsB === goalsB).length;
-    }
-    const data = await this.fetchSheets('CHECK_DUPLICATES', { matchId, goalsA, goalsB });
-    return data.count || 0;
-  }
-
-  async submitPrediction(pred: Omit<Prediction, 'id' | 'statusPix' | 'createdAt'>): Promise<{ success: boolean; predictionId: number }> {
-    if (this.useMock()) {
-      const all = await this.getAllPredictions();
-      const newPred: Prediction = {
-        ...pred,
-        id: Date.now(),
-        statusPix: 'PENDING',
-        createdAt: new Date().toISOString()
-      };
-      all.push(newPred);
-      localStorage.setItem('predictions', JSON.stringify(all));
-      return { success: true, predictionId: newPred.id };
-    }
-    return await this.fetchSheets('SUBMIT_PREDICTION', { prediction: pred });
-  }
-
-  async confirmPayment(id: number): Promise<{ waLink?: string }> {
-    if (this.useMock()) {
-      const all = await this.getAllPredictions();
-      const idx = all.findIndex(p => p.id === id);
-      let prediction: Prediction | undefined;
-      let match: MatchData | undefined;
-      if (idx >= 0) {
-        all[idx].statusPix = 'PAID';
-        prediction = all[idx];
-        localStorage.setItem('predictions', JSON.stringify(all));
-        const matches = await this.getMatches();
-        match = matches.find(m => m.id === prediction!.matchId);
+      if (action === 'getMatches' && data && Array.isArray(data.matches) && data.matches.length === 0) {
+         data.matches = [
+            {
+               id: 'brazil_game_1',
+               teamA: 'Brasil',
+               teamAFlag: 'https://upload.wikimedia.org/wikipedia/en/0/05/Flag_of_Brazil.svg',
+               teamB: 'Suíça', 
+               teamBFlag: 'https://upload.wikimedia.org/wikipedia/commons/f/f3/Flag_of_Switzerland.svg',
+               date: '10/06/2026',
+               time: '16:00',
+               stadium: 'Estádio MetLife - NY',
+               round: 'Fase de Grupos',
+               isActive: 1,
+               isClosed: 0,
+               resultA: null,
+               resultB: null
+            }
+         ];
       }
-      if (prediction && match) {
-        const message = `Olá, ${prediction.name}! 🏆 Seu pagamento foi confirmado. Palpite: ${match.teamA} ${prediction.goalsA} x ${prediction.goalsB} ${match.teamB}. Boa sorte no Bolão!`;
-        const phoneClean = prediction.whatsapp.replace(/\D/g, '');
-        return { waLink: `https://api.whatsapp.com/send?phone=55${phoneClean}&text=${encodeURIComponent(message)}` };
-      }
-      return {};
+      return data;
+    } catch (e) {
+      console.warn(`GAS fetch failed for ${action}:`, e);
+      throw e;
     }
-    return await this.fetchSheets('CONFIRM_PAYMENT', { id });
-  }
+  },
 
-  async getPredictionStats(matchId: string): Promise<any[]> {
-    if (this.useMock()) {
-      const all = await this.getAllPredictions();
-      const matchPreds = all.filter(p => p.matchId === matchId);
-      const groups: Record<string, { goalsA: number; goalsB: number; count: number }> = {};
-      matchPreds.forEach(p => {
-        const key = `${p.goalsA}-${p.goalsB}`;
-        if (!groups[key]) groups[key] = { goalsA: p.goalsA, goalsB: p.goalsB, count: 0 };
-        groups[key].count++;
+  async post(action: string, body: any) {
+    try {
+      const payload = { action, ...body };
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        redirect: 'follow'
       });
-      return Object.values(groups).sort((a, b) => b.count - a.count).slice(0, 3);
+      const data = await res.json();
+      if (!data || data.error) {
+         throw new Error(data?.error || 'Invalid response from GAS');
+      }
+      return data;
+    } catch (e) {
+      console.warn(`GAS post failed for ${action}:`, e);
+      throw e;
     }
-    const data = await this.fetchSheets('GET_STATS', { matchId });
-    return data.stats || [];
   }
-}
-
-export const api = new ApiService();
+};
