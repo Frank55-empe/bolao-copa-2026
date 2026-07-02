@@ -1,0 +1,25 @@
+  - uses: actions/setup-node@v4
+    with:
+      node-version: 20
+
+  - name: Show workspace and list files (debug)
+    run: |
+      echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+      echo "Working directory: $(pwd)"
+      ls -la
+      echo "Contents of repository root:"
+      find . -maxdepth 2 -type f -printf "%p\n" || true
+
+  - name: Install dependencies
+    run: |
+      npm ci
+
+  - name: Build
+    run: |
+      npm run build
+    env:
+      VITE_SHEETS_API_URL: ${{ secrets.VITE_SHEETS_API_URL }}
+
+  - uses: actions/upload-pages-artifact@v3
+    with:
+      path: dist
