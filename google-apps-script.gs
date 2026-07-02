@@ -18,6 +18,26 @@
  * 4. Implantar > Nova implantação > Tipo: App da Web
  *    Executar como: Eu | Acesso: Qualquer pessoa
  * 5. Copie a URL gerada e cole em config.js → CONFIG.API_URL
+ *
+ * ════════════════════════════════════════════════════════════
+ * NOTIFICAÇÃO AUTOMÁTICA DE PAGAMENTO CONFIRMADO (WhatsApp)
+ * ════════════════════════════════════════════════════════════
+ * 6. Para ativar o envio automático de WhatsApp quando o admin
+ *    escrever "PAGO" na coluna statusPix:
+ *
+ *    a) No editor do Apps Script, clique no ícone de relógio
+ *       (Gatilhos / Triggers) no menu lateral esquerdo.
+ *    b) Clique em "+ Adicionar gatilho" (canto inferior direito).
+ *    c) Configure assim:
+ *         Função a executar : onEditTrigger
+ *         Tipo de evento    : Da planilha → Ao editar
+ *         Implantação       : Cabeçalho (não usar implantação)
+ *    d) Clique em Salvar e autorize as permissões.
+ *
+ *    Pronto! Toda vez que você digitar "PAGO" (qualquer
+ *    capitalização) na coluna statusPix da aba Predictions,
+ *    o link do WhatsApp com a mensagem de confirmação será
+ *    aberto automaticamente no seu navegador.
  */
 
 // ─────────────────────────────────────────────
@@ -54,12 +74,177 @@ function readSheetAsJson(sheetName) {
   return result;
 }
 
+// ─────────────────────────────────────────────────────────────
+// MENSAGEM DE BOAS-VINDAS — enviada ao receber um novo palpite
+// ─────────────────────────────────────────────────────────────
+//
+// Chamada automaticamente dentro de SUBMIT_PREDICTION sempre
+// que um participante registra um palpite via aplicativo.
+// Abre um popup para o admin com o botão do WhatsApp já pronto.
+
+function enviarBoasVindas(nome, whatsapp, teamA, goalsA, goalsB, teamB, dataJogo, horaJogo) {
+  try {
+    var numero = '55' + String(whatsapp).replace(/\D/g, '');
+    if (numero.length < 12) return;
+
+    var msg =
+      '⚽ *BOLÃO COPA 2026* ⚽\n' +
+      '━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+      '🎉 *Seja bem-vindo(a) ao Bolão, ' + nome + '!*\n\n' +
+      'Recebemos seu palpite com sucesso. Agora é só torcer! 🤞\n\n' +
+      '🎯 *Seu palpite registrado:*\n' +
+      '   ' + teamA + ' *' + goalsA + ' x ' + goalsB + '* ' + teamB + '\n' +
+      (dataJogo ? '   📅 ' + dataJogo + (horaJogo ? ' às ' + horaJogo : '') + '\n' : '') +
+      '\n' +
+      '━━━━━━━━━━━━━━━━━━━━━━━\n' +
+      '💳 *Para confirmar sua participação,\n' +
+      'efetue o pagamento via PIX:*\n\n' +
+      '📱 *Chave PIX (celular):*\n' +
+      '   35991717912\n\n' +
+      '👤 *Favorecido:*\n' +
+      '   Frank de Souza Borges\n\n' +
+      'Após o pagamento, envie o comprovante\n' +
+      'para que seu palpite seja validado. ✅\n\n' +
+      '━━━━━━━━━━━━━━━━━━━━━━━\n' +
+      '🍀 *BOA SORTE!!!* 🍀';
+
+    var waUrl = 'https://api.whatsapp.com/send?phone=' + numero +
+                '&text=' + encodeURIComponent(msg);
+
+    var ui = SpreadsheetApp.getUi();
+    var html = HtmlService.createHtmlOutput(
+      '<html><body style="font-family:Arial,sans-serif;padding:20px;">' +
+      '<h3 style="color:#009739;">⚽ Novo palpite recebido!</h3>' +
+      '<p>Clique no botão abaixo para enviar a mensagem de boas-vindas para <strong>' + nome + '</strong>:</p>' +
+      '<a href="' + waUrl + '" target="_blank" ' +
+      'style="display:inline-block;background:#25D366;color:white;padding:12px 24px;' +
+      'border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">' +
+      '📲 Enviar Boas-Vindas</a>' +
+      '<p style="color:#555;font-size:13px;margin-top:14px;">' +
+      'Palpite: <strong>' + teamA + ' ' + goalsA + ' x ' + goalsB + ' ' + teamB + '</strong></p>' +
+      '<p style="color:#888;font-size:12px;margin-top:4px;">Número: ' + numero + '</p>' +
+      '</body></html>'
+    ).setWidth(420).setHeight(240);
+
+    ui.showModalDialog(html, '📲 Boas-vindas — ' + nome);
+  } catch (err) {
+    console.error('enviarBoasVindas error:', err);
+  }
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICAÇÃO AUTOMÁTICA VIA WHATSAPP
+// ─────────────────────────────────────────────
+//
+// Este gatilho é disparado sempre que qualquer célula da planilha
+// for editada. Ele verifica se:
+//   • a edição foi na aba "Predictions"
+//   • a coluna editada é "statusPix" (coluna G = índice 7)
+//   • o novo valor digitado é "PAGO" (qualquer capitalização)
+//
+// Se tudo bater, monta a mensagem de confirmação e abre o
+// WhatsApp Web no navegador do admin com o link já preenchido.
+//
+// IMPORTANTE: registre esta função como gatilho "Ao editar"
+// conforme as instruções no cabeçalho deste arquivo.
+
+function onEditTrigger(e) {
+  try {
+    var range = e.range;
+    var sheet = range.getSheet();
+
+    // Só age na aba Predictions
+    if (sheet.getName() !== 'Predictions') return;
+
+    // Coluna G (índice 7) = statusPix
+    // Cabeçalho: id(1) | matchId(2) | name(3) | whatsapp(4) | goalsA(5) | goalsB(6) | statusPix(7) | createdAt(8)
+    var STATUS_PIX_COL = 7;
+    if (range.getColumn() !== STATUS_PIX_COL) return;
+
+    // Verifica se o novo valor é "PAGO" (case-insensitive)
+    var novoValor = String(e.value || '').trim().toUpperCase();
+    if (novoValor !== 'PAGO') return;
+
+    // Lê os dados da linha editada
+    var row      = range.getRow();
+    var rowData  = sheet.getRange(row, 1, 1, 8).getValues()[0];
+
+    var matchId  = String(rowData[1]).trim();
+    var nome     = String(rowData[2]).trim();
+    var whatsapp = String(rowData[3]).trim().replace(/\D/g, '');
+    var goalsA   = rowData[4];
+    var goalsB   = rowData[5];
+
+    if (!whatsapp || whatsapp.length < 10) return;
+
+    // Busca os times do jogo correspondente
+    var matchSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Matches');
+    var teamA = 'Time A';
+    var teamB = 'Time B';
+    var dataJogo = '';
+    var horaJogo = '';
+
+    if (matchSheet) {
+      var matchData = matchSheet.getDataRange().getValues();
+      for (var i = 1; i < matchData.length; i++) {
+        if (String(matchData[i][0]).trim() === matchId) {
+          teamA    = String(matchData[i][1]).trim();
+          teamB    = String(matchData[i][3]).trim();
+          dataJogo = String(matchData[i][5]).trim();
+          horaJogo = String(matchData[i][6]).trim();
+          break;
+        }
+      }
+    }
+
+    // ── Monta a mensagem de confirmação ──────────────────────
+    var msg =
+      '🏆 *BOLÃO COPA 2026* 🏆\n' +
+      '━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+      '✅ *PALPITE CONFIRMADO!*\n\n' +
+      'Olá, *' + nome + '*! Seu pagamento foi recebido e seu palpite está oficialmente registrado no bolão.\n\n' +
+      '⚽ *Jogo:*\n' +
+      '   ' + teamA + ' x ' + teamB + '\n' +
+      (dataJogo ? '   📅 ' + dataJogo + (horaJogo ? ' às ' + horaJogo : '') + '\n' : '') +
+      '\n' +
+      '🎯 *Seu palpite:*\n' +
+      '   ' + teamA + ' *' + goalsA + ' x ' + goalsB + '* ' + teamB + '\n\n' +
+      '━━━━━━━━━━━━━━━━━━━━━━━\n' +
+      '🍀 *BOA SORTE!!!* 🍀';
+
+    // Formata o número com DDI 55 (Brasil)
+    var numero = '55' + whatsapp;
+
+    // Abre o WhatsApp Web no navegador do admin com a mensagem pronta
+    var waUrl = 'https://api.whatsapp.com/send?phone=' + numero +
+                '&text=' + encodeURIComponent(msg);
+
+    // Exibe um popup no Sheets com o link (o admin clica para abrir)
+    var ui = SpreadsheetApp.getUi();
+    var html = HtmlService.createHtmlOutput(
+      '<html><body style="font-family:Arial,sans-serif;padding:20px;">' +
+      '<h3 style="color:#128C7E;">✅ Pagamento confirmado!</h3>' +
+      '<p>Clique no botão abaixo para enviar a mensagem de confirmação para <strong>' + nome + '</strong> no WhatsApp:</p>' +
+      '<a href="' + waUrl + '" target="_blank" ' +
+      'style="display:inline-block;background:#25D366;color:white;padding:12px 24px;' +
+      'border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;">' +
+      '📲 Abrir WhatsApp</a>' +
+      '<p style="color:#888;font-size:12px;margin-top:16px;">Número: ' + numero + '</p>' +
+      '</body></html>'
+    ).setWidth(400).setHeight(220);
+
+    ui.showModalDialog(html, '📲 Enviar confirmação — ' + nome);
+
+  } catch (err) {
+    // Falha silenciosa para não interromper a edição do admin
+    console.error('onEditTrigger error:', err);
+  }
+}
+
 // ─────────────────────────────────────────────
 // ENTRY POINTS
 // ─────────────────────────────────────────────
 
-// ✅ TODAS as requisições chegam via GET (fetch com redirect:follow no browser)
-// O frontend envia: ?action=NOME&payload={"chave":"valor"}
 function doGet(e) {
   var action  = e.parameter.action || '';
   var payload = {};
@@ -70,7 +255,6 @@ function doGet(e) {
   return handleRequest(action, payload);
 }
 
-// Mantido para compatibilidade futura
 function doPost(e) {
   var data = {};
   if (e.postData && e.postData.contents) {
@@ -87,8 +271,6 @@ function doPost(e) {
 function handleRequest(action, data) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    // ── LEITURAS ─────────────────────────────
 
     if (action === 'GET_MATCHES') {
       return jsonResult({ matches: readSheetAsJson('Matches') });
@@ -129,8 +311,6 @@ function handleRequest(action, data) {
       });
       return jsonResult({ count: count });
     }
-
-    // ── GRAVAÇÕES ────────────────────────────
 
     if (action === 'SAVE_MATCH') {
       return lockWrapper(function() {
@@ -185,7 +365,6 @@ function handleRequest(action, data) {
       });
     }
 
-    // ✅ CORREÇÃO 3: grava palpite + cadastro do usuário na planilha
     if (action === 'SUBMIT_PREDICTION') {
       return lockWrapper(function() {
         var sheet = ss.getSheetByName('Predictions');
@@ -201,6 +380,29 @@ function handleRequest(action, data) {
           'PENDING',
           new Date().toISOString()
         ]);
+
+        // ── Busca dados do jogo para compor a mensagem de boas-vindas ──
+        var teamA    = 'Time A';
+        var teamB    = 'Time B';
+        var dataJogo = '';
+        var horaJogo = '';
+        var matchSheet = ss.getSheetByName('Matches');
+        if (matchSheet) {
+          var matchRows = matchSheet.getDataRange().getValues();
+          for (var mi = 1; mi < matchRows.length; mi++) {
+            if (String(matchRows[mi][0]).trim() === String(p.matchId).trim()) {
+              teamA    = String(matchRows[mi][1]).trim();
+              teamB    = String(matchRows[mi][3]).trim();
+              dataJogo = String(matchRows[mi][5]).trim();
+              horaJogo = String(matchRows[mi][6]).trim();
+              break;
+            }
+          }
+        }
+
+        // ── Abre popup de boas-vindas para o admin enviar via WhatsApp ──
+        enviarBoasVindas(p.name, p.whatsapp, teamA, p.goalsA, p.goalsB, teamB, dataJogo, horaJogo);
+
         return jsonResult({ success: true, predictionId: id });
       });
     }
