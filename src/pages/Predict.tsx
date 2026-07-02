@@ -10,7 +10,7 @@ export default function Predict({ user }: { user: UserData }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // match vem do location.state OU é buscado da API pelo matchId (HashRouter perde o state)
+  // ✅ match vem do location.state OU é buscado da API pelo matchId (HashRouter perde o state)
   const [match, setMatch] = useState<MatchData | null>(
     (location.state as MatchData) || null
   );
@@ -231,7 +231,7 @@ export default function Predict({ user }: { user: UserData }) {
               </div>
               <div className="space-y-3">
                 <button onClick={() => { setShowConfirmModal(false); checkAndSubmit(false); }} disabled={loading} className="w-full bg-gradient-to-r from-[#009739] to-[#00702a] text-white font-bold uppercase tracking-widest py-3.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all text-xs flex items-center justify-center gap-2">
-                  {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'CONFIRMAR PALPITE OK'}
+                  {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'CONFIRMAR PALPITE ✓'}
                 </button>
                 <button onClick={() => setShowConfirmModal(false)} disabled={loading} className="w-full bg-white/5 text-white/70 font-bold uppercase tracking-widest py-3.5 rounded-xl hover:bg-white/10 transition-colors text-xs">ALTERAR PLACAR</button>
               </div>
