@@ -67,7 +67,7 @@ const FALLBACK_SETTINGS: Record<string,string> = {
 // ─── URL do Google Apps Script ────────────────────────────────────────────────
 export const SHEETS_API_URL: string =
   (import.meta.env.VITE_SHEETS_API_URL as string) ||
-  'https://script.google.com/macros/s/AKfycbycdZOUrAI2-UT5_is9tsSBuApa33O9PLrtq7vgK7_MvJ-YXE8AUJPWnQc4DCrfCZCZ/exec';
+  'https://script.google.com/macros/s/AKfycbxBAHYcxCwXruOXIuneZSkxypLN_LKNGWKQbZcQZwRaS0TIor8FJB3qnC18x1cbkrPX/exec';
 
 // ─── JSONP helper ─────────────────────────────────────────────────────────────
 function callSheets(action: string, payload?: Record<string,any>): Promise<any> {
