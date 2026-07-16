@@ -48,8 +48,8 @@ export default function Home({ onComplete }: { onComplete: (data: UserData) => v
         className="max-w-md w-full mx-auto flex flex-col justify-center min-h-[80vh]"
       >
         <div className="text-center mb-10 text-shadow-strong">
-          <h3 className="title-display text-[50px] md:text-[60px] mb-4 text-white leading-none">
-            ESPANHA<br /><span className="text-[#FFCD00]">ARGENTINA</span><br />
+          <h3 className="title-display text-[60px] md:text-[60px] mb-4 text-white leading-none">
+            BOLÃO DA COPA<br /><span className="text-[#FFCD00]">ESPANHA X ARGENTINA</span><br />
           </h3>
           <p className="text-lg text-white font-medium px-4 max-w-sm mx-auto leading-relaxed">
             Palpite agora no jogo em destaque da Copa e mostre que você entende de futebol.
