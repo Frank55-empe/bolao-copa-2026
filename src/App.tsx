@@ -63,7 +63,7 @@ export default function App() {
           </div>
 
           <footer className="mt-12 text-center text-white/10 hover:text-white/30 transition-colors text-xs flex items-center justify-center gap-2 font-bold uppercase tracking-widest select-none">
-            <span>© Bolão Copa 2026</span>
+            <span>© GRANDE FINAL</span>
             <span className="text-white/5">•</span>
             <Link to="/admin" className="hover:text-[#FFCD00] flex items-center gap-1 transition-colors py-2">
               <Settings className="w-3 h-3 text-[#009739]" />
