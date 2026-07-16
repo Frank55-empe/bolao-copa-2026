@@ -92,7 +92,7 @@ export default function Pix() {
 
   const handleShare = () => {
     const url = window.location.origin;
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Participe do Bolão Mundial 2026! Acesse: ${url}`)}`, '_blank');
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Participe do Bolão GRANDE FINAL! Acesse: ${url}`)}`, '_blank');
   };
 
   const handleClose = () => {
