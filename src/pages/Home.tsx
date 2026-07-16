@@ -52,7 +52,7 @@ export default function Home({ onComplete }: { onComplete: (data: UserData) => v
             BOLÃO DA COPA<br /><span className="text-[#FFCD00]">ESPANHA X ARGENTINA</span><br />
           </h3>
           <p className="text-lg text-white font-medium px-4 max-w-sm mx-auto leading-relaxed">
-          A Grande Final chegou! Agora é a sua vez de mostrar que entende de futebol. Faça seu palpite antes do apito inicial e prove que você consegue prever o grande campeão!
+          <h2🏆 Faça seu palpite e entre para a Grande Final!</h2>
           </p>
         </div>
 
