@@ -52,7 +52,7 @@ export default function Home({ onComplete }: { onComplete: (data: UserData) => v
             BOLÃO DA COPA<br /><span className="text-[#FFCD00]">ESPANHA X ARGENTINA</span><br />
           </h3>
           <p className="text-lg text-white font-medium px-4 max-w-sm mx-auto leading-relaxed">
-          <h2🏆 Faça seu palpite e entre para a Grande Final!</h2>
+          🏆 Faça seu palpite e entre para a Grande Final!
           </p>
         </div>
 
