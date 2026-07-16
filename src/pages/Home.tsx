@@ -49,7 +49,7 @@ export default function Home({ onComplete }: { onComplete: (data: UserData) => v
       >
         <div className="text-center mb-10 text-shadow-strong">
           <h1 className="title-display text-[60px] md:text-[80px] mb-4 text-white leading-none">
-            BOLÃO<br /><span className="text-[#FFCD00]">MUNDIAL</span><br />2026
+            GRANDE<br /><span className="text-[#FFCD00]">FINAL</span><br />2026
           </h1>
           <p className="text-lg text-white font-medium px-4 max-w-sm mx-auto leading-relaxed">
             Palpite agora no jogo em destaque da Copa e mostre que você entende de futebol.
