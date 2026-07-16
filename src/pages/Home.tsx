@@ -48,9 +48,9 @@ export default function Home({ onComplete }: { onComplete: (data: UserData) => v
         className="max-w-md w-full mx-auto flex flex-col justify-center min-h-[80vh]"
       >
         <div className="text-center mb-10 text-shadow-strong">
-          <h1 className="title-display text-[60px] md:text-[80px] mb-4 text-white leading-none">
-            GRANDE FINAL<br /><span className="text-[#FFCD00]">ESPANHA X ARGENTINA</span><br />COMPA DO MUNDO 2026
-          </h1>
+          <h2 className="title-display text-[60px] md:text-[80px] mb-4 text-white leading-none">
+            ESPANHA<br /><span className="text-[#FFCD00]">ARGENTINA</span><br />COMPA DO MUNDO 2026
+          </h2>
           <p className="text-lg text-white font-medium px-4 max-w-sm mx-auto leading-relaxed">
             Palpite agora no jogo em destaque da Copa e mostre que você entende de futebol.
           </p>
