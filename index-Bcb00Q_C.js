@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Bolão Mundial 2026</title>
+  <title>GANDRE FINAL</title>
   <script>
     (function() {
       var l = window.location;
