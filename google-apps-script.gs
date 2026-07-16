@@ -233,7 +233,7 @@ function route(action, data, cb) {
 
       var msg  = 'Olá ' + pred.name + '! ✅ Pagamento CONFIRMADO! Seu palpite: ' +
                  pred.teamA + ' ' + pred.goalsA + ' x ' + pred.goalsB + ' ' + pred.teamB +
-                 '. Boa sorte no Bolão Copa 2026! 🏆⚽';
+                 '. Boa sorte na GRANDE FINAL! 🏆⚽';
       var fone = String(pred.whatsapp).replace(/\D/g, '');
       var link = 'https://api.whatsapp.com/send?phone=55' + fone + '&text=' + encodeURIComponent(msg);
 
