@@ -71,7 +71,7 @@ export default function Pix() {
     if (!predictionState) return;
     const { name, match, goalsA, goalsB } = predictionState;
     navigator.clipboard.writeText(
-      `🏆 BOLÃO MUNDIAL 2026\n` +
+      `🏆 BOLÃO MUNDIAL GRANDE FINAL\n` +
       `COMPROVANTE DE PALPITE\n\n` +
       `Participante: ${name}\nWhatsApp: ${customWhatsapp}\n\n` +
       `Jogo: ${match.teamA} ${goalsA} x ${goalsB} ${match.teamB}\n` +
